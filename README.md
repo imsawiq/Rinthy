@@ -4,7 +4,7 @@
   <img src="./public/logo.png" width="128" height="128" alt="Rinthy" />
 </div>
 
-**EN**
+# **EN**
 
 Rinthy is a mobile app for Modrinth developers.
 
