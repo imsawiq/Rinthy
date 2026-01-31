@@ -6,7 +6,8 @@ const USER_AGENT = 'Rinthy/1.0.0';
 
 const isDebugEnabled = () => {
   try {
-    return import.meta.env.DEV && localStorage.getItem('modrinth_debug') === 'true';
+    const isDev = !!(import.meta as any)?.env?.DEV;
+    return isDev && localStorage.getItem('modrinth_debug') === 'true';
   } catch {
     return false;
   }
