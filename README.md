@@ -86,10 +86,6 @@ Rinthy uses a Modrinth **Personal Access Token (PAT)**.
 
 **Security note:** the token is stored locally on your device.
 
-## License
-
-Choose and add a license file (MIT/Apache-2.0/etc) if you plan to publish the repository.
-
 ---
 
 # Русский
