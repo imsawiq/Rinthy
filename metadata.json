@@ -1,0 +1,5 @@
+{
+  "name": "Rinthy",
+  "description": "A developer app for Modrinth to manage projects, view analytics, and optimize descriptions using AI.",
+  "requestFramePermissions": []
+}
