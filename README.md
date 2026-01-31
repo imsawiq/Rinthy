@@ -27,6 +27,7 @@ It helps you manage your projects and check analytics right from your phone.
 - **Profile editing** (username, bio, avatar)
 - **Appearance settings** (theme, accent color)
 - **RU/EN language support**
+- **Balance view**
 
 ## Getting started (Local development)
 
@@ -114,6 +115,7 @@ Rinthy — это мобильное приложение для разрабо�
 - **Редактирование профиля** (ник, био, аватар)
 - **Настройки внешнего вида** (тема, основной цвет)
 - **Поддержка RU/EN**
+- **Просмотр баланса**
 
 ## Запуск локально
 
