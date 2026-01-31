@@ -1,9 +1,8 @@
-
 import { ModrinthProject, ModrinthUser, ModrinthPayoutHistory, ProjectMember, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion } from '../types';
 
 const BASE_URL = 'https://api.modrinth.com/v2';
 const BASE_URL_V3 = 'https://api.modrinth.com/v3';
-const USER_AGENT = 'Rinthy/1.0.0 (imsawiq@modrinth.com)';
+const USER_AGENT = 'Rinthy/1.0.0';
 
 const isDebugEnabled = () => {
   try {
