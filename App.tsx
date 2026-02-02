@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext, useRef } from 'react';
+
+declare const __APP_VERSION__: string;
 import { HashRouter, Routes, Route, useNavigate, useParams, Outlet, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
 import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, TrendingUp, Archive, Lock, EyeOff, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, Calendar, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical } from 'lucide-react';
@@ -28,7 +30,7 @@ const BackButtonHandler: React.FC = () => {
           setLastBackPress(now);
           const toast = document.createElement('div');
           toast.innerText = t('press_back_again');
-          toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-modrinth-card/75 backdrop-blur-2xl text-modrinth-text px-6 py-3 rounded-full shadow-[0_18px_50px_rgba(0,0,0,0.45)] z-[200] font-medium text-sm';
+          toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-modrinth-card/85 backdrop-blur-xl text-modrinth-text px-6 py-3 rounded-full shadow-[0_12px_30px_rgba(0,0,0,0.35)] z-[200] font-medium text-sm';
           document.body.appendChild(toast);
           setTimeout(() => toast.remove(), 2000);
         }
@@ -41,6 +43,46 @@ const BackButtonHandler: React.FC = () => {
   }, [navigate, location, lastBackPress, t]);
 
   return null;
+};
+
+// --- App Version ---
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '1.0.0';
+const GITHUB_REPO = 'imsawiq/Rinthy';
+
+interface GitHubRelease {
+  tag_name: string;
+  name: string;
+  body: string;
+  html_url: string;
+  published_at: string;
+  assets: { name: string; browser_download_url: string }[];
+}
+
+const checkForUpdates = async (): Promise<GitHubRelease | null> => {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
+    if (!res.ok) return null;
+    const release: GitHubRelease = await res.json();
+    const latestVersion = release.tag_name.replace(/^v/, '');
+    if (latestVersion !== APP_VERSION && compareVersions(latestVersion, APP_VERSION) > 0) {
+      return release;
+    }
+  } catch (e) {
+    console.error('Update check failed:', e);
+  }
+  return null;
+};
+
+const compareVersions = (a: string, b: string): number => {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
 };
 
 // --- Icons ---
@@ -181,7 +223,15 @@ const TRANSLATIONS = {
     avg_label: 'Среднее',
     downloads_per_project: 'Загрузок / проект',
     no_top_projects: 'Нет данных по топ-проектам',
-    categories_overview: 'Категории'
+    categories_overview: 'Категории',
+    update_available: 'Доступно обновление',
+    update_new_version: 'Новая версия',
+    update_current: 'Текущая версия',
+    update_download: 'Скачать',
+    update_later: 'Позже',
+    update_whats_new: 'Что нового',
+    update_outdated: 'Версия устарела',
+    update_view_release: 'Открыть релиз'
   },
   en: {
     welcome_title: 'Welcome to Rinthy',
@@ -310,7 +360,15 @@ const TRANSLATIONS = {
     avg_label: 'Avg',
     downloads_per_project: 'Downloads / project',
     no_top_projects: 'No top projects data',
-    categories_overview: 'Categories'
+    categories_overview: 'Categories',
+    update_available: 'Update Available',
+    update_new_version: 'New version',
+    update_current: 'Current version',
+    update_download: 'Download',
+    update_later: 'Later',
+    update_whats_new: 'What\'s new',
+    update_outdated: 'Outdated version',
+    update_view_release: 'View release'
   }
 };
 
@@ -371,14 +429,14 @@ const WelcomeSetup: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-modrinth-bg flex flex-col items-center justify-center p-6 text-center animate-fade-in">
       <div className="w-full max-w-sm flex-1 flex flex-col items-center justify-center">
-        <div className="bg-modrinth-card/70 backdrop-blur-xl w-32 h-32 rounded-3xl flex items-center justify-center mb-10 shadow-[0_18px_50px_rgba(0,0,0,0.35)]">
+        <div className="bg-modrinth-card/75 backdrop-blur-xl w-32 h-32 rounded-3xl flex items-center justify-center mb-10 shadow-[0_12px_30px_rgba(0,0,0,0.3)]">
           <ModrinthLogo className="w-16 h-16" />
         </div>
 
         <h2 className="text-3xl font-bold text-modrinth-text mb-3 animate-fade-in-up">{t('welcome_title')}</h2>
         <p className="text-modrinth-muted mb-10 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>{t('welcome_subtitle')}</p>
 
-        <div className="w-full bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] overflow-hidden">
+        <div className="w-full bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
           <div className="text-modrinth-green font-bold text-sm uppercase mb-3">{t('choose_language')}</div>
           <div className="flex bg-modrinth-bg rounded-xl p-1 border border-modrinth-border">
             {(['en', 'ru'] as Language[]).map(l => (
@@ -430,7 +488,7 @@ const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-modrinth-bg flex flex-col items-center justify-center p-6 text-center animate-fade-in">
       <div className="w-full max-w-sm flex-1 flex flex-col items-center justify-center">
-        <div className="bg-modrinth-card/70 backdrop-blur-xl w-32 h-32 rounded-3xl flex items-center justify-center mb-10 shadow-[0_18px_50px_rgba(0,0,0,0.35)] animate-pulse-slow">
+        <div className="bg-modrinth-card/75 backdrop-blur-xl w-32 h-32 rounded-3xl flex items-center justify-center mb-10 shadow-[0_12px_30px_rgba(0,0,0,0.3)] animate-pulse-slow">
           {steps[step].icon}
         </div>
         <h2 className="text-3xl font-bold text-modrinth-text mb-4 animate-fade-in-up">{steps[step].title}</h2>
@@ -455,16 +513,14 @@ const LoginScreen: React.FC<{ onLogin: (token: string) => void; isLoading: boole
     <div className="min-h-screen flex flex-col items-center justify-center bg-modrinth-bg p-6 relative overflow-hidden">
       <div className="w-full max-w-xs animate-fade-in-up relative z-10">
         <div className="flex justify-center mb-8">
-           <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_18px_50px_rgba(0,0,0,0.40)] relative overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
-              <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_0_0_2px_rgba(0,0,0,0.25)]" />
+           <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
               <ModrinthLogo className="w-16 h-16 text-modrinth-green" />
            </div>
         </div>
         <h1 className="text-3xl font-bold text-center text-modrinth-text mb-2">{t('login_title')}</h1>
         <p className="text-modrinth-muted text-center text-sm mb-8">{t('login_subtitle')}</p>
         <div className="space-y-4">
-          <div className="bg-modrinth-card/70 backdrop-blur-xl p-1 rounded-2xl shadow-[0_12px_38px_rgba(0,0,0,0.30)]">
+          <div className="bg-modrinth-card/75 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_26px_rgba(0,0,0,0.25)]">
             <input type="password" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)} placeholder="mrp_..." className="w-full bg-transparent text-modrinth-text p-4 outline-none text-center font-mono" />
           </div>
           {error && <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">{error}</div>}
@@ -501,10 +557,73 @@ const TokenHelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+// --- Update Modal ---
+const UpdateModal: React.FC<{ release: GitHubRelease; onClose: () => void }> = ({ release, onClose }) => {
+  const { t, theme } = useSettings();
+  const version = release.tag_name.replace(/^v/, '');
+  const apkAsset = release.assets.find(a => a.name.endsWith('.apk'));
+
+  const overlayClass = theme === 'light' ? 'bg-black/40' : 'bg-black/60';
+  const modalClass = theme === 'light'
+    ? 'bg-white/95 border border-black/10 shadow-[0_14px_36px_rgba(0,0,0,0.2)]'
+    : 'bg-modrinth-card/95 shadow-[0_14px_36px_rgba(0,0,0,0.5)]';
+
+  return (
+    <div className={`fixed inset-0 z-[250] ${overlayClass} backdrop-blur-md flex items-center justify-center p-6 animate-fade-in`} onClick={onClose}>
+      <div className={`${modalClass} backdrop-blur-xl w-full max-w-sm rounded-3xl overflow-hidden animate-scale-in`} onClick={e => e.stopPropagation()}>
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-br from-modrinth-green/20 via-modrinth-green/10 to-transparent p-6 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-modrinth-green/20 rounded-2xl flex items-center justify-center">
+            <Download size={32} className="text-modrinth-green" />
+          </div>
+          <h3 className="text-xl font-bold text-modrinth-text mb-1">{t('update_available')}</h3>
+          <div className="flex items-center justify-center gap-3 text-sm">
+            <span className="text-modrinth-muted">{APP_VERSION}</span>
+            <ChevronRight size={16} className="text-modrinth-green" />
+            <span className="text-modrinth-green font-bold">{version}</span>
+          </div>
+        </div>
+
+        {/* Release notes */}
+        {release.body && (
+          <div className="px-6 py-4 border-t border-modrinth-border/50">
+            <h4 className="text-xs font-bold text-modrinth-muted uppercase mb-2">{t('update_whats_new')}</h4>
+            <div className="text-sm text-modrinth-text/80 max-h-32 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              {release.body.slice(0, 500)}{release.body.length > 500 ? '...' : ''}
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="p-4 flex gap-3">
+          <button
+            onClick={onClose}
+            className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-colors ${
+              theme === 'light' 
+                ? 'bg-black/5 text-black/70 hover:bg-black/10' 
+                : 'bg-modrinth-bg text-modrinth-muted hover:text-modrinth-text'
+            }`}
+          >
+            {t('update_later')}
+          </button>
+          <a
+            href={apkAsset?.browser_download_url || release.html_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-1 py-3 rounded-2xl font-bold text-sm bg-modrinth-green text-white text-center flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          >
+            <Download size={16} /> {t('update_download')}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user: ModrinthUser; token: string }> = ({ isOpen, onClose, user, token }) => {
     const [notifs, setNotifs] = useState<ModrinthNotification[]>([]);
     const [loading, setLoading] = useState(true);
-    const { t } = useSettings();
+    const { t, theme } = useSettings();
 
     useEffect(() => {
         if(isOpen) {
@@ -538,18 +657,27 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
 
     if (!isOpen) return null;
 
+    const overlayClass = theme === 'light' ? 'bg-black/40' : 'bg-black/60';
+    const modalClass = theme === 'light'
+      ? 'bg-white/95 border border-black/10 shadow-[0_14px_36px_rgba(0,0,0,0.2)]'
+      : 'bg-modrinth-card/90 shadow-[0_14px_36px_rgba(0,0,0,0.4)]';
+    const cardClass = theme === 'light'
+      ? 'bg-black/[0.04] border border-black/10'
+      : 'bg-modrinth-bg/60';
+    const readAllClass = theme === 'light'
+      ? 'bg-black/[0.06] hover:bg-black/10 text-modrinth-green border border-black/10'
+      : 'bg-modrinth-bg hover:bg-modrinth-cardHover text-modrinth-green';
+
     return (
-        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 sm:p-4 animate-fade-in pt-safe">
-			<div className="bg-modrinth-card backdrop-blur-2xl w-full max-w-md rounded-3xl animate-scale-in max-h-[75vh] sm:max-h-[80vh] flex flex-col shadow-[0_24px_60px_rgba(0,0,0,0.55)] overflow-hidden relative">
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
-                <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.28)]" />
+        <div className={`fixed inset-0 z-[200] ${overlayClass} backdrop-blur-sm flex items-center justify-center px-4 sm:p-4 animate-fade-in pt-safe`}>
+			<div className={`${modalClass} backdrop-blur-xl w-full max-w-md rounded-3xl animate-scale-in max-h-[75vh] sm:max-h-[80vh] flex flex-col overflow-hidden relative`}>
                 <div className="p-5 flex justify-between items-center bg-transparent rounded-t-3xl relative">
                     <h3 className="text-lg font-bold text-modrinth-text flex items-center gap-2">
                         <Bell className="text-modrinth-green" size={20} /> {t('notifications')}
                     </h3>
                     <div className="flex items-center gap-2">
                         {notifs.length > 0 && (
-                            <button onClick={handleReadAll} className="bg-modrinth-bg hover:bg-modrinth-cardHover text-modrinth-green text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]">
+                            <button onClick={handleReadAll} className={`${readAllClass} text-xs font-bold px-3 py-1.5 rounded-full transition-colors flex items-center gap-1`}>
                                 <CheckCheck size={14}/> {t('read_all')}
                             </button>
                         )}
@@ -561,14 +689,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                     {loading && <div className="flex justify-center p-10"><Loader2 className="animate-spin text-modrinth-green" /></div>}
                     {!loading && notifs.length === 0 && (
                         <div className="text-center py-20 text-modrinth-muted flex flex-col items-center">
-                            <div className="bg-modrinth-bg p-4 rounded-full mb-3 opacity-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]"><Bell size={32} /></div>
+                            <div className={`${cardClass} p-4 rounded-full mb-3 opacity-50`}><Bell size={32} /></div>
                             <p>{t('no_notifications')}</p>
                         </div>
                     )}
                     {notifs.map(n => (
-                        <div key={n.id} className="bg-modrinth-bg p-4 rounded-3xl flex gap-3 relative group shadow-[0_12px_38px_rgba(0,0,0,0.28)] overflow-hidden">
-                            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
-                            <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]" />
+                        <div key={n.id} className={`${cardClass} p-4 rounded-3xl flex gap-3 relative group overflow-hidden`}>
                             <div className="flex-1 relative min-w-0">
                                 <h4 className="text-sm font-bold text-modrinth-text mb-1">{n.title}</h4>
                                 <p className="text-xs text-modrinth-muted leading-relaxed mb-2">{n.text}</p>
@@ -618,14 +744,12 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
 
   return (
     <div className="pb-4 px-4 animate-fade-in">
-      <header className="flex justify-between items-center mb-6 sticky top-0 z-50 backdrop-blur-2xl pt-[calc(env(safe-area-inset-top)+1rem)] pb-4 -mx-4 px-4 min-h-[92px] shadow-[0_14px_50px_rgba(0,0,0,0.55)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.55)' }}>
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.045] via-transparent to-black/10" />
-        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_0_0_2px_rgba(0,0,0,0.35)]" />
+      <header className="flex justify-between items-center mb-6 sticky top-0 z-50 backdrop-blur-xl pt-[calc(env(safe-area-inset-top)+0.85rem)] pb-3 -mx-4 px-4 min-h-[84px] shadow-[0_8px_24px_rgba(0,0,0,0.35)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.7)' }}>
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-modrinth-text leading-none">{t('dashboard')}</h1>
           <p className="text-modrinth-muted text-xs font-medium">{t('dev_panel')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
            <button
              onClick={() => loadProjects()}
              className="p-2 text-modrinth-muted hover:text-modrinth-green transition-colors"
@@ -637,7 +761,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
               <Bell size={24} />
               {/* TODO: Add dynamic unread badge based on API */}
            </button>
-           <img src={user.avatar_url} alt="User" className="w-10 h-10 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),0_8px_24px_rgba(0,0,0,0.25)]" />
+           <img src={user.avatar_url} alt="User" className="w-9 h-9 rounded-full shadow-[0_6px_18px_rgba(0,0,0,0.28)]" />
         </div>
       </header>
       {loading ? <div className="flex justify-center pt-40"><Loader2 className="animate-spin text-modrinth-green w-10 h-10" /></div> : (
@@ -649,7 +773,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
           ))}
           {projects.length === 0 && (
             <div className="text-center text-modrinth-muted py-40">
-              <div className="bg-modrinth-card/70 backdrop-blur-xl inline-block p-6 rounded-full mb-4 shadow-[0_12px_38px_rgba(0,0,0,0.30)]"><FileText size={48} className="opacity-50"/></div>
+              <div className="bg-modrinth-card/75 backdrop-blur-xl inline-block p-6 rounded-full mb-4 shadow-[0_10px_26px_rgba(0,0,0,0.25)]"><FileText size={48} className="opacity-50"/></div>
               <p className="text-lg font-medium">{t('no_projects')}</p>
               <p className="text-sm mt-2">{t('create_project')}</p>
             </div>
@@ -686,9 +810,7 @@ const InviteMemberModal: React.FC<{ isOpen: boolean; onClose: () => void; onInvi
 
   return (
     <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-modrinth-card/75 backdrop-blur-2xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up shadow-[0_24px_60px_rgba(0,0,0,0.55)] relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.035] via-transparent to-black/10" />
-        <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_0_0_2px_rgba(0,0,0,0.25)]" />
+      <div className="bg-modrinth-card/85 backdrop-blur-xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up shadow-[0_14px_36px_rgba(0,0,0,0.4)] relative overflow-hidden">
         <div className="relative">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-modrinth-text">{t('invite')}</h3>
@@ -737,8 +859,8 @@ const ProfileEditModal: React.FC<{ isOpen: boolean; onClose: () => void; user: M
 
   const overlayClass = theme === 'light' ? 'bg-black/40' : 'bg-black/60';
   const modalClass = theme === 'light'
-    ? 'bg-white/95 border border-black/10 shadow-[0_24px_60px_rgba(0,0,0,0.25)]'
-    : 'bg-modrinth-card/75 shadow-[0_24px_60px_rgba(0,0,0,0.55)]';
+    ? 'bg-white/95 border border-black/10 shadow-[0_14px_36px_rgba(0,0,0,0.2)]'
+    : 'bg-modrinth-card/85 shadow-[0_14px_36px_rgba(0,0,0,0.4)]';
   const inputClass = theme === 'light'
     ? 'bg-black/[0.04] border border-black/10 text-black focus:border-modrinth-green'
     : 'bg-modrinth-bg/60 border border-modrinth-border/70 text-modrinth-text focus:border-modrinth-green';
@@ -752,9 +874,7 @@ const ProfileEditModal: React.FC<{ isOpen: boolean; onClose: () => void; user: M
 
   return (
     <div className={`fixed inset-0 z-[150] ${overlayClass} backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in`}>
-      <div className={`${modalClass} backdrop-blur-2xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up relative overflow-hidden`}>
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.035] via-transparent to-black/10" />
-        <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_0_0_2px_rgba(0,0,0,0.25)]" />
+      <div className={`${modalClass} backdrop-blur-xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up relative overflow-hidden`}>
         <div className="relative">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-modrinth-text">{t('edit_profile')}</h3>
@@ -1223,46 +1343,40 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
         {activeTab === 'overview' && (
           <div className={`space-y-6 ${animClass}`}>
              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl relative overflow-hidden shadow-[0_12px_38px_rgba(0,0,0,0.28)]">
-                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+                <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl relative overflow-hidden shadow-[0_10px_26px_rgba(0,0,0,0.25)]">
                    <div className="absolute top-0 right-0 p-3 opacity-10 text-modrinth-text"><Download size={40} /></div>
                    <p className="text-modrinth-muted text-xs uppercase font-bold mb-1">{t('downloads')}</p>
                    <p className="text-2xl font-bold text-modrinth-text">{project.downloads.toLocaleString()}</p>
                 </div>
-                <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl relative overflow-hidden shadow-[0_12px_38px_rgba(0,0,0,0.28)]">
-                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+                <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl relative overflow-hidden shadow-[0_10px_26px_rgba(0,0,0,0.25)]">
                    <div className="absolute top-0 right-0 p-3 opacity-10 text-modrinth-text"><Heart size={40} /></div>
                    <p className="text-modrinth-muted text-xs uppercase font-bold mb-1">{t('likes')}</p>
                    <p className="text-2xl font-bold text-modrinth-text">{project.followers.toLocaleString()}</p>
                 </div>
              </div>
-             <div className="bg-modrinth-card/70 backdrop-blur-xl rounded-3xl p-5 shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+             <div className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-5 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                 <h3 className="text-modrinth-text font-bold mb-2 text-sm flex items-center gap-2"><Info size={16} className="text-modrinth-green"/> {t('description')}</h3>
                 <p className="text-modrinth-text/80 leading-relaxed text-sm">{project.description}</p>
              </div>
              <div className="grid grid-cols-2 gap-4">
-               <div className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.22)] relative overflow-hidden">
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+               <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.2)] relative overflow-hidden">
                   <div className="flex items-center gap-2 mb-3 text-modrinth-muted text-xs font-bold uppercase"><Monitor size={14} /> {t('client')}</div>
                   <div className={`text-center py-2 rounded-lg font-bold text-sm border ${project.client_side === 'required' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-modrinth-cardHover text-modrinth-muted border-modrinth-border'}`}>{project.client_side}</div>
                </div>
-               <div className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.22)] relative overflow-hidden">
-                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+               <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.2)] relative overflow-hidden">
                   <div className="flex items-center gap-2 mb-3 text-modrinth-muted text-xs font-bold uppercase"><Server size={14} /> {t('server')}</div>
                   <div className={`text-center py-2 rounded-lg font-bold text-sm border ${project.server_side === 'required' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-modrinth-cardHover text-modrinth-muted border-modrinth-border'}`}>{project.server_side}</div>
                </div>
              </div>
              
              {/* Dependencies */}
-             <div className="bg-modrinth-card/70 backdrop-blur-xl rounded-3xl p-5 shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+             <div className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-5 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                  <h3 className="text-modrinth-text font-bold mb-3 text-sm flex items-center gap-2"><Package size={16} className="text-modrinth-green"/> {t('dependencies')}</h3>
                  <div className="space-y-3">
                      {deps.length === 0 && <p className="text-xs text-modrinth-muted italic">{t('no_dependencies')}</p>}
                      {deps.map((d, i) => (
-                         <div key={i} className="flex items-center gap-3 bg-modrinth-bg p-3 rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),inset_0_0_0_2px_rgba(0,0,0,0.22)]">
-                             <div className="w-10 h-10 rounded-lg bg-modrinth-card shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)] overflow-hidden flex-shrink-0 flex items-center justify-center">
+                         <div key={i} className="flex items-center gap-3 bg-modrinth-bg p-3 rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
+                             <div className="w-10 h-10 rounded-lg bg-modrinth-card shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] overflow-hidden flex-shrink-0 flex items-center justify-center">
                                 {d.icon_url ? (
                                   <img src={d.icon_url} className="w-full h-full object-cover"/>
                                 ) : (
@@ -1272,7 +1386,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between">
                                    <span className="text-sm font-bold text-modrinth-text truncate pr-2">{d.title || d.project_id}</span>
-                                   <span className="text-[10px] text-modrinth-muted bg-modrinth-bg px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),inset_0_0_0_2px_rgba(0,0,0,0.18)]">{d.dependency_type}</span>
+                                   <span className="text-[10px] text-modrinth-muted bg-modrinth-bg px-2 py-0.5 rounded-full uppercase tracking-wider">{d.dependency_type}</span>
                                 </div>
                                 <p className="text-[10px] text-modrinth-muted font-mono mt-0.5">{d.project_id || d.file_name}</p>
                              </div>
@@ -1283,8 +1397,8 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
 
              <div className="space-y-2 pt-2">
                <h3 className="text-modrinth-muted font-bold text-xs uppercase px-1 mb-1">{t('resources')}</h3>
-               {project.source_url && <a href={project.source_url} target="_blank" className="flex items-center gap-3 p-4 rounded-3xl bg-modrinth-card/70 backdrop-blur-xl text-modrinth-text active:scale-[0.99] shadow-[0_12px_38px_rgba(0,0,0,0.22)] relative overflow-hidden"><div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" /><Globe size={18} /><span className="text-sm font-medium relative">{t('source')}</span><ExternalLink size={14} className="ml-auto opacity-30 relative"/></a>}
-               {project.issues_url && <a href={project.issues_url} target="_blank" className="flex items-center gap-3 p-4 rounded-3xl bg-modrinth-card/70 backdrop-blur-xl text-modrinth-text active:scale-[0.99] shadow-[0_12px_38px_rgba(0,0,0,0.22)] relative overflow-hidden"><div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" /><Info size={18} /><span className="text-sm font-medium relative">{t('issues')}</span><ExternalLink size={14} className="ml-auto opacity-30 relative"/></a>}
+               {project.source_url && <a href={project.source_url} target="_blank" className="flex items-center gap-3 p-4 rounded-3xl bg-modrinth-card/75 backdrop-blur-xl text-modrinth-text active:scale-[0.99] shadow-[0_10px_26px_rgba(0,0,0,0.2)]"><Globe size={18} /><span className="text-sm font-medium">{t('source')}</span><ExternalLink size={14} className="ml-auto opacity-30"/></a>}
+               {project.issues_url && <a href={project.issues_url} target="_blank" className="flex items-center gap-3 p-4 rounded-3xl bg-modrinth-card/75 backdrop-blur-xl text-modrinth-text active:scale-[0.99] shadow-[0_10px_26px_rgba(0,0,0,0.2)]"><Info size={18} /><span className="text-sm font-medium">{t('issues')}</span><ExternalLink size={14} className="ml-auto opacity-30"/></a>}
              </div>
           </div>
         )}
@@ -1297,9 +1411,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
                     </div>
                 ) : (
                     versions.map(v => (
-                        <div key={v.id} className="bg-modrinth-card backdrop-blur-xl p-4 rounded-3xl relative shadow-[0_12px_38px_rgba(0,0,0,0.24)] overflow-hidden">
-                            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
-                            <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]" />
+                        <div key={v.id} className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl relative shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
@@ -1323,11 +1435,9 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
                                   </button>
                                   {versionMenuId === v.id && (
                                     <div
-                                      className="absolute top-10 right-2 z-30 bg-modrinth-card backdrop-blur-2xl rounded-2xl shadow-[0_18px_50px_rgba(0,0,0,0.55)] text-[11px] overflow-hidden animate-fade-in-up min-w-[140px]"
+                                      className="absolute top-10 right-2 z-30 bg-modrinth-card/90 backdrop-blur-xl rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.4)] text-[11px] overflow-hidden animate-fade-in-up min-w-[140px]"
                                       onClick={e => e.stopPropagation()}
                                     >
-                                      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
-                                      <div className="absolute inset-0 pointer-events-none rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.28)]" />
                                       <button
                                         className="relative w-full px-3 py-2 text-left text-modrinth-text hover:bg-modrinth-bg flex items-center gap-1.5"
                                         onClick={() => { setVersionMenuId(null); openEditVersion(v); }}
@@ -1349,12 +1459,12 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
                             <div className="space-y-2">
                                 <div className="flex gap-2 overflow-x-auto no-scrollbar">
                                     {v.game_versions.map(gv => (
-                                        <span key={gv} className="text-[10px] bg-modrinth-bg px-2 py-1 rounded-full text-modrinth-muted whitespace-nowrap shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)]">{gv}</span>
+                                        <span key={gv} className="text-[10px] bg-modrinth-bg px-2 py-1 rounded-full text-modrinth-muted whitespace-nowrap">{gv}</span>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
                                     {v.loaders.map(l => (
-                                        <span key={l} className="text-[10px] font-bold uppercase text-modrinth-text/70 bg-modrinth-bg px-2 py-0.5 rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),inset_0_0_0_2px_rgba(0,0,0,0.20)]">{l}</span>
+                                        <span key={l} className="text-[10px] font-bold uppercase text-modrinth-text/70 bg-modrinth-bg px-2 py-0.5 rounded-full">{l}</span>
                                     ))}
                                 </div>
                             </div>
@@ -1368,8 +1478,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
             {/* Icon Management */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-modrinth-green mb-2 px-1"><ImageIcon size={18} /><h3 className="font-bold uppercase tracking-wider text-sm">{t('icon')}</h3></div>
-                <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl flex items-center gap-4 shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+                <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl flex items-center gap-4 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                     <div className="w-16 h-16 rounded-2xl bg-modrinth-bg/60 border border-modrinth-border/30 overflow-hidden flex items-center justify-center relative">
                         {project.icon_url ? <img src={project.icon_url} className="w-full h-full object-cover" /> : <ImageIcon className="text-modrinth-muted"/>}
                     </div>
@@ -1389,8 +1498,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
 
             <section className="space-y-4">
               <div className="flex items-center gap-2 text-modrinth-green mb-2 px-1"><Edit3 size={18} /><h3 className="font-bold uppercase tracking-wider text-sm">{t('main_info')}</h3></div>
-              <div className="space-y-4 bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+              <div className="space-y-4 bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                 <div><label className="block text-xs font-bold text-modrinth-muted uppercase mb-1.5">{t('title')}</label><input type="text" value={formData.title || ''} onChange={e => handleInputChange('title', e.target.value)} className="w-full bg-modrinth-bg border border-modrinth-border rounded-xl p-3.5 text-modrinth-text text-sm focus:border-modrinth-green outline-none"/></div>
                 <div>
                     <label className="block text-xs font-bold text-modrinth-muted uppercase mb-1.5">{t('short_desc')}</label>
@@ -1424,8 +1532,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
             {/* Gallery Management */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-modrinth-green mb-2 px-1"><ImageIcon size={18} /><h3 className="font-bold uppercase tracking-wider text-sm">{t('gallery')}</h3></div>
-                <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+                <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                     <div className="grid grid-cols-3 gap-2 mb-4">
                         {project.gallery?.map((img, idx) => (
                             <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group bg-modrinth-bg">
@@ -1443,8 +1550,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
 
             <section className="space-y-4">
               <div className="flex items-center gap-2 text-modrinth-green mb-2 px-1"><ShieldCheck size={18} /><h3 className="font-bold uppercase tracking-wider text-sm">{t('status_license')}</h3></div>
-              <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden space-y-4">
-                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+              <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden space-y-4">
                  {/* Read-only current status */}
                  <div>
                     <label className="block text-xs font-bold text-modrinth-muted uppercase mb-1.5">{t('status')}</label>
@@ -1474,8 +1580,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
             </section>
             <section className="space-y-4">
                <div className="flex items-center gap-2 text-modrinth-green mb-2 px-1"><Globe size={18} /><h3 className="font-bold uppercase tracking-wider text-sm">{t('links')}</h3></div>
-               <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden space-y-4">
-                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+               <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden space-y-4">
                  {['source_url', 'issues_url', 'wiki_url', 'discord_url'].map((field) => (
                    <div key={field}><label className="block text-xs font-bold text-modrinth-muted uppercase">{field.replace('_url', '')}</label><input type="url" value={formData[field as keyof ModrinthProject] as string || ''} onChange={e => handleInputChange(field, e.target.value)} className="w-full bg-modrinth-bg border border-modrinth-border rounded-xl p-3.5 text-modrinth-text text-sm" placeholder="https://..."/></div>
                  ))}
@@ -1490,8 +1595,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
               <button onClick={()=>setShowInviteModal(true)} className="bg-modrinth-green text-white p-2 rounded-lg active:scale-90"><UserPlus size={18}/></button>
             </div>
             {members.map(member => (
-              <div key={member.user.id} className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+              <div key={member.user.id} className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl flex flex-col gap-3 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
                  <div className="flex items-center gap-3 relative">
                    <img src={member.user.avatar_url} className="w-10 h-10 rounded-lg bg-modrinth-bg" alt=""/>
                    <div className="flex-1">
@@ -1529,9 +1633,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
 
       {editingVersion && (
         <div className="fixed inset-0 z-[180] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-modrinth-card backdrop-blur-2xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up shadow-[0_24px_60px_rgba(0,0,0,0.55)] relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
-            <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.25)]" />
+          <div className="bg-modrinth-card/85 backdrop-blur-xl w-full max-w-sm rounded-3xl p-5 animate-fade-in-up shadow-[0_14px_36px_rgba(0,0,0,0.45)] relative overflow-hidden">
             <div className="relative">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-modrinth-text">Edit version</h3>
@@ -1547,7 +1649,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
               <div>
                 <label className="block text-xs font-bold text-modrinth-muted uppercase mb-1">Name</label>
                 <input
-                  className="w-full bg-modrinth-bg rounded-2xl p-3 text-sm text-modrinth-text outline-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)] focus:shadow-[inset_0_0_0_1px_rgba(74,222,128,0.35),inset_0_0_0_2px_rgba(0,0,0,0.22)]"
+                  className="w-full bg-modrinth-bg rounded-2xl p-3 text-sm text-modrinth-text outline-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] focus:shadow-[inset_0_0_0_1px_rgba(74,222,128,0.45)]"
                   value={editingVersionName}
                   onChange={e => setEditingVersionName(e.target.value)}
                 />
@@ -1556,7 +1658,7 @@ const ProjectDetail: React.FC<{ token: string }> = ({ token }) => {
               <div>
                 <label className="block text-xs font-bold text-modrinth-muted uppercase mb-1">Type</label>
                 <select
-                  className="w-full bg-modrinth-bg rounded-2xl p-3 text-sm text-modrinth-text outline-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.22)] focus:shadow-[inset_0_0_0_1px_rgba(74,222,128,0.35),inset_0_0_0_2px_rgba(0,0,0,0.22)]"
+                  className="w-full bg-modrinth-bg rounded-2xl p-3 text-sm text-modrinth-text outline-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)] focus:shadow-[inset_0_0_0_1px_rgba(74,222,128,0.45)]"
                   value={editingVersionType}
                   onChange={e => setEditingVersionType(e.target.value as any)}
                 >
@@ -1993,9 +2095,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
 
   return (
     <div className="px-4 pb-32 animate-fade-in">
-      <header className="flex items-center justify-between mb-6 sticky top-0 z-50 backdrop-blur-2xl pt-[calc(env(safe-area-inset-top)+1rem)] pb-4 -mx-4 px-4 min-h-[92px] shadow-[0_14px_50px_rgba(0,0,0,0.55)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.55)' }}>
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.045] via-transparent to-black/10" />
-        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_0_0_2px_rgba(0,0,0,0.35)]" />
+      <header className="flex items-center justify-between mb-6 sticky top-0 z-50 backdrop-blur-xl pt-[calc(env(safe-area-inset-top)+0.85rem)] pb-3 -mx-4 px-4 min-h-[84px] shadow-[0_8px_24px_rgba(0,0,0,0.35)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.7)' }}>
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-modrinth-text leading-none">{t('analytics')}</h1>
           <p className="text-modrinth-muted text-xs font-medium">{t('dev_panel')}</p>
@@ -2124,8 +2224,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-        <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="text-modrinth-green"><FileText /></div>
             <div className="text-[10px] uppercase text-modrinth-muted font-bold">{t('projects_label')}</div>
@@ -2133,8 +2232,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           <div className="text-2xl font-bold text-modrinth-text">{projects.length.toLocaleString()}</div>
           <div className="text-xs text-modrinth-muted">{t('total_label')}</div>
         </div>
-        <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="text-modrinth-green"><Download /></div>
             <div className="text-[10px] uppercase text-modrinth-muted font-bold">{t('downloads_label')}</div>
@@ -2142,8 +2240,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           <div className="text-2xl font-bold text-modrinth-text">{stats.totalDownloads.toLocaleString()}</div>
           <div className="text-xs text-modrinth-muted">{t('total_downloads')}</div>
         </div>
-        <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="text-red-400"><Heart /></div>
             <div className="text-[10px] uppercase text-modrinth-muted font-bold">{t('follows_label')}</div>
@@ -2151,8 +2248,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           <div className="text-2xl font-bold text-modrinth-text">{stats.totalLikes.toLocaleString()}</div>
           <div className="text-xs text-modrinth-muted">{t('total_likes')}</div>
         </div>
-        <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="text-modrinth-green"><Activity /></div>
             <div className="text-[10px] uppercase text-modrinth-muted font-bold">{t('avg_label')}</div>
@@ -2171,30 +2267,29 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           </div>
       </div>
       
-      <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl mb-8 animate-fade-in-up shadow-[0_12px_38px_rgba(0,0,0,0.24)] relative overflow-hidden" style={{ animationDelay: '0.15s' }}>
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+      <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl mb-8 animate-fade-in-up shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden" style={{ animationDelay: '0.15s' }}>
         {projects.length > 0 ? (
             <div className="space-y-2">
               {sortedProjects.map((p, idx) => {
                 const val = p[metric];
                 const percent = (val / maxVal) * 100;
                 return (
-                  <div key={p.id} className="bg-modrinth-bg/50 border border-modrinth-border rounded-2xl p-3 flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-modrinth-card flex items-center justify-center text-xs font-bold text-modrinth-muted">{idx + 1}</div>
+                  <div key={p.id} className="bg-modrinth-bg/40 rounded-2xl p-3 flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-modrinth-green/15 flex items-center justify-center text-xs font-bold text-modrinth-green">{idx + 1}</div>
                     {p.icon_url ? (
-                      <img src={p.icon_url} alt={p.title} className="w-10 h-10 rounded-xl bg-modrinth-bg border border-modrinth-border" />
+                      <img src={p.icon_url} alt={p.title} className="w-10 h-10 rounded-xl bg-modrinth-bg" />
                     ) : (
-                      <div className="w-10 h-10 rounded-xl bg-modrinth-bg border border-modrinth-border flex items-center justify-center text-modrinth-muted">
+                      <div className="w-10 h-10 rounded-xl bg-modrinth-bg flex items-center justify-center text-modrinth-muted">
                         <Package size={18} />
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-3">
                         <div className="text-sm font-bold text-modrinth-text truncate">{p.title}</div>
-                        <div className="text-sm font-mono font-bold text-modrinth-text">{val.toLocaleString()}</div>
+                        <div className="text-sm font-mono font-bold text-modrinth-green">{val.toLocaleString()}</div>
                       </div>
-                      <div className="mt-2 h-2 w-full bg-modrinth-bg rounded-full overflow-hidden border border-modrinth-border/50">
-                        <div className="h-full bg-modrinth-green rounded-full" style={{ width: `${percent}%` }} />
+                      <div className="mt-2 h-1.5 w-full bg-modrinth-bg/80 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-modrinth-green to-modrinth-green/70 rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
                       </div>
                     </div>
                   </div>
@@ -2207,14 +2302,13 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
       <h3 className="text-sm font-bold text-modrinth-muted uppercase mb-3">{t('categories_overview')}</h3>
       <div className="grid grid-cols-2 gap-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         {stats.sortedCats.map(([cat, count]) => (
-          <div key={cat} className="bg-modrinth-card/70 backdrop-blur-xl p-3 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.22)] relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+          <div key={cat} className="bg-modrinth-card/75 backdrop-blur-xl p-3 rounded-2xl shadow-[0_10px_26px_rgba(0,0,0,0.2)] relative overflow-hidden">
             <div className="flex items-center justify-between gap-2 mb-2 relative">
               <div className="text-sm font-bold text-modrinth-text truncate capitalize">{cat}</div>
               <div className="text-xs font-mono font-bold text-modrinth-muted">{count}</div>
             </div>
-            <div className="h-2 bg-modrinth-bg rounded-full overflow-hidden border border-modrinth-border/50 relative">
-              <div className="h-full bg-modrinth-green rounded-full" style={{ width: `${projects.length ? (count / projects.length) * 100 : 0}%` }} />
+            <div className="h-1.5 bg-modrinth-bg/80 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-modrinth-green to-modrinth-green/70 rounded-full" style={{ width: `${projects.length ? (count / projects.length) * 100 : 0}%` }} />
             </div>
           </div>
         ))}
@@ -2226,28 +2320,35 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
   );
 };
 
-const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: string }> = ({ user, onLogout, token }) => {
+const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: string; updateInfo?: GitHubRelease | null }> = ({ user, onLogout, token, updateInfo }) => {
   const { theme, setTheme, language, setLanguage, t, accentColor, setAccentColor } = useSettings();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [currUser, setCurrUser] = useState(user);
   const [colorInput, setColorInput] = useState(accentColor);
+  const [settingsRelease, setSettingsRelease] = useState<GitHubRelease | null>(updateInfo ?? null);
+  const latestVersion = settingsRelease?.tag_name.replace(/^v/, '') || null;
+  const isOutdated = latestVersion ? compareVersions(latestVersion, APP_VERSION) > 0 : false;
 
   const reloadUser = () => {
     fetchCurrentUser(token).then(setCurrUser).catch(console.error);
   };
 
+  useEffect(() => {
+    if (settingsRelease) return;
+    checkForUpdates().then(release => {
+      if (release) setSettingsRelease(release);
+    });
+  }, [settingsRelease]);
+
   return (
     <div className="px-4 pb-20 animate-fade-in">
-      <header className="flex items-center justify-between mb-6 sticky top-0 z-50 backdrop-blur-2xl pt-[calc(env(safe-area-inset-top)+1rem)] pb-4 -mx-4 px-4 min-h-[92px] shadow-[0_14px_50px_rgba(0,0,0,0.55)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.55)' }}>
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.045] via-transparent to-black/10" />
-        <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),inset_0_0_0_2px_rgba(0,0,0,0.35)]" />
+      <header className="flex items-center justify-between mb-6 sticky top-0 z-50 backdrop-blur-xl pt-[calc(env(safe-area-inset-top)+0.85rem)] pb-3 -mx-4 px-4 min-h-[84px] shadow-[0_8px_24px_rgba(0,0,0,0.35)] overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: 'rgba(var(--card-rgb), 0.7)' }}>
         <div className="flex flex-col gap-1 relative">
           <h1 className="text-2xl font-bold text-modrinth-text leading-none">{t('settings')}</h1>
           <p className="text-modrinth-muted text-xs font-medium">{t('dev_panel')}</p>
         </div>
       </header>
-      <div className="bg-modrinth-card/70 backdrop-blur-xl p-5 rounded-3xl flex items-center gap-4 mb-6 animate-fade-in-up relative shadow-[0_12px_38px_rgba(0,0,0,0.28)] overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
+      <div className="bg-modrinth-card/75 backdrop-blur-xl p-5 rounded-3xl flex items-center gap-4 mb-6 animate-fade-in-up relative shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
         <img src={currUser.avatar_url} alt={currUser.username} className="w-16 h-16 rounded-full bg-modrinth-bg border-2 border-modrinth-border" />
         <div>
           <div className="relative">
@@ -2258,9 +2359,30 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
         </div>
       </div>
 
+      {isOutdated && settingsRelease && (
+        <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden mb-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-full bg-modrinth-green/15 text-modrinth-green"><AlertTriangle size={18} /></div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-modrinth-text mb-1">{t('update_outdated')}</div>
+              <div className="text-xs text-modrinth-muted mb-3">
+                {t('update_current')}: {APP_VERSION} · {t('update_new_version')}: {latestVersion}
+              </div>
+              <a
+                href={settingsRelease.assets.find(a => a.name.endsWith('.apk'))?.browser_download_url || settingsRelease.html_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-bold text-modrinth-green bg-modrinth-bg px-3 py-1.5 rounded-lg"
+              >
+                <ExternalLink size={12} /> {t('update_view_release')}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-         <div className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] overflow-hidden">
-           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+         <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
            <div className="flex items-center gap-2 mb-3 text-modrinth-green font-bold text-sm uppercase"><Globe size={16} /> {t('language')}</div>
            <div className="flex bg-modrinth-bg rounded-xl p-1 border border-modrinth-border">
              {/* Swapped order: EN first */}
@@ -2272,8 +2394,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
            </div>
          </div>
 
-         <div className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] overflow-hidden">
-           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+         <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
            <div className="flex items-center gap-2 mb-3 text-modrinth-green font-bold text-sm uppercase"><Moon size={16} /> {t('theme')}</div>
            <div className="flex bg-modrinth-bg rounded-xl p-1 border border-modrinth-border">
             {(['dark', 'light'] as ThemeMode[]).map(m => (
@@ -2284,8 +2405,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
            </div>
          </div>
 
-         <div className="bg-modrinth-card/70 backdrop-blur-xl p-4 rounded-3xl shadow-[0_12px_38px_rgba(0,0,0,0.24)] overflow-hidden">
-           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.02] via-transparent to-black/10" />
+         <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.22)] overflow-hidden">
            <div className="flex items-center justify-between mb-3">
              <div className="flex items-center gap-2 text-modrinth-green font-bold text-sm uppercase"><Smartphone size={16} /> {t('accent_color')}</div>
              <button 
@@ -2342,7 +2462,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
       </div>
 
       <div className="mt-12 text-center animate-fade-in" style={{ animationDelay: '0.3s' }}>
-         <p className="text-modrinth-muted text-sm font-medium">Rinthy v1.0.0</p>
+         <p className="text-modrinth-muted text-sm font-medium">Rinthy v{APP_VERSION}</p>
          <p className="text-modrinth-muted text-xs mt-4">
            {t('unofficial')} <a href="https://modrinth.com/user/imsawiq" className="text-modrinth-green hover:underline">imsawiq</a>
          </p>
@@ -2354,16 +2474,16 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
 
 // --- Main Application Component ---
 
-const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => void }> = ({ user, token, onLogout }) => {
+const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => void; updateInfo?: GitHubRelease | null }> = ({ user, token, onLogout, updateInfo }) => {
   const [activeTab, setActiveTab] = useState<NavTab>(NavTab.PROJECTS);
   const { t } = useSettings();
   
   return (
     <>
-      <div className="pb-28">
+      <div className="pb-20">
         {activeTab === NavTab.PROJECTS && <Dashboard user={user} token={token} />}
         {activeTab === NavTab.ANALYTICS && <AnalyticsPage user={user} token={token} />}
-        {activeTab === NavTab.SETTINGS && <SettingsPage user={user} onLogout={onLogout} token={token} />}
+        {activeTab === NavTab.SETTINGS && <SettingsPage user={user} onLogout={onLogout} token={token} updateInfo={updateInfo} />}
       </div>
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} t={t} />
     </>
@@ -2380,6 +2500,39 @@ const App: React.FC = () => {
   });
   const [hasSeenWelcome, setHasSeenWelcome] = useState(localStorage.getItem('has_seen_welcome') === 'true');
   const [showHelp, setShowHelp] = useState(false);
+  const [updateRelease, setUpdateRelease] = useState<GitHubRelease | null>(null);
+  const [latestRelease, setLatestRelease] = useState<GitHubRelease | null>(null);
+
+  // Check for updates on app start
+  useEffect(() => {
+    const now = Date.now();
+    const launchCount = parseInt(localStorage.getItem('launch_count') || '0', 10) + 1;
+    localStorage.setItem('launch_count', launchCount.toString());
+
+    const cachedRelease = localStorage.getItem('latest_release');
+    if (cachedRelease) {
+      try {
+        setLatestRelease(JSON.parse(cachedRelease));
+      } catch (e) {
+        localStorage.removeItem('latest_release');
+      }
+    }
+
+    checkForUpdates().then(release => {
+      if (release) {
+        setLatestRelease(release);
+        localStorage.setItem('latest_release', JSON.stringify(release));
+        const dismissed = localStorage.getItem('dismissed_version');
+        const dismissedAt = parseInt(localStorage.getItem('dismissed_at_launch') || '0', 10);
+        const shouldRemind = dismissed !== release.tag_name || (launchCount - dismissedAt) >= 5;
+
+        if (shouldRemind) {
+          setUpdateRelease(release);
+        }
+      }
+      localStorage.setItem('last_update_check', now.toString());
+    });
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -2452,7 +2605,7 @@ const App: React.FC = () => {
         <BackButtonHandler />
         <div className="min-h-screen bg-modrinth-bg text-modrinth-text font-sans selection:bg-modrinth-green/30">
            <Routes>
-              <Route path="/" element={<MainLayout user={authState.user} token={authState.token} onLogout={handleLogout} />} />
+              <Route path="/" element={<MainLayout user={authState.user} token={authState.token} onLogout={handleLogout} updateInfo={latestRelease} />} />
               <Route path="/project/:id" element={<ProjectDetail token={authState.token} />} />
            </Routes>
         </div>
@@ -2460,9 +2613,19 @@ const App: React.FC = () => {
     );
   };
 
+  const handleDismissUpdate = () => {
+    if (updateRelease) {
+      const launchCount = parseInt(localStorage.getItem('launch_count') || '0', 10);
+      localStorage.setItem('dismissed_version', updateRelease.tag_name);
+      localStorage.setItem('dismissed_at_launch', launchCount.toString());
+    }
+    setUpdateRelease(null);
+  };
+
   return (
     <SettingsProvider>
       {renderContent()}
+      {updateRelease && <UpdateModal release={updateRelease} onClose={handleDismissUpdate} />}
     </SettingsProvider>
   );
 };

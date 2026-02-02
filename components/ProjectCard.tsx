@@ -55,16 +55,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
   return (
     <div 
       onClick={() => onClick(project.id)}
-      className="bg-modrinth-card/70 backdrop-blur-xl rounded-3xl p-4 mb-4 active:scale-[0.985] transition-all duration-300 cursor-pointer shadow-[0_12px_38px_rgba(0,0,0,0.32)] hover:shadow-[0_18px_50px_rgba(0,0,0,0.40)] group relative overflow-hidden"
+      className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-4 mb-4 active:scale-[0.985] transition-all duration-300 cursor-pointer shadow-[0_10px_28px_rgba(0,0,0,0.28)] hover:shadow-[0_14px_36px_rgba(0,0,0,0.34)] group relative overflow-hidden"
     >
-      {/* Decorative gradient glow */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.035] via-transparent to-black/10" />
-      <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.035),inset_0_0_0_2px_rgba(0,0,0,0.25)]" />
-      <div className="absolute top-0 right-0 w-24 h-24 bg-modrinth-green/6 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="flex items-start justify-between mb-3 relative z-10">
         <div className="flex items-center gap-3 overflow-hidden flex-1">
-          <div className="w-14 h-14 rounded-2xl bg-modrinth-bg overflow-hidden flex-shrink-0 border border-modrinth-border/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="w-14 h-14 rounded-2xl bg-modrinth-bg overflow-hidden flex-shrink-0 border border-modrinth-border/70">
             {project.icon_url ? (
               <img src={project.icon_url} alt={project.title} className="w-full h-full object-cover" />
             ) : (
@@ -98,11 +94,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
 
       {showMenu && (
         <div
-          className="absolute top-10 right-4 z-30 bg-modrinth-card backdrop-blur-2xl rounded-2xl shadow-[0_18px_50px_rgba(0,0,0,0.55)] py-1.5 min-w-[180px] text-xs overflow-hidden animate-fade-in-up"
+          className="absolute top-10 right-4 z-30 bg-modrinth-card/90 backdrop-blur-xl rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.4)] py-1.5 min-w-[180px] text-xs overflow-hidden animate-fade-in-up"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-black/10" />
-          <div className="absolute inset-0 pointer-events-none rounded-2xl shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03),inset_0_0_0_2px_rgba(0,0,0,0.28)]" />
           <button
             type="button"
             onClick={handleOpenOnWeb}
