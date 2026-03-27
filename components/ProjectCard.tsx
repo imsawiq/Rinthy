@@ -8,6 +8,8 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+  const summary = (project.description || '').trim() || 'No summary available';
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'approved': return { color: 'text-modrinth-green border-modrinth-green bg-modrinth-green/10', icon: Globe, label: 'Approved' };
@@ -94,7 +96,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
 
       {showMenu && (
         <div
-          className="absolute top-10 right-4 z-30 bg-modrinth-card/90 backdrop-blur-xl rounded-2xl shadow-[0_12px_30px_rgba(0,0,0,0.4)] py-1.5 min-w-[180px] text-xs overflow-hidden animate-fade-in-up"
+          className="absolute top-10 right-4 z-30 rounded-2xl text-xs overflow-hidden animate-fade-in-up min-w-[180px] bg-modrinth-card shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -117,7 +119,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
       )}
 
       <p className="text-sm text-modrinth-text/80 line-clamp-2 mb-4 leading-relaxed min-h-[2.5em] relative z-10">
-        {project.description}
+        {summary}
       </p>
 
       <div className="flex items-center justify-between text-xs text-modrinth-muted border-t border-modrinth-border/40 pt-3 relative z-10">

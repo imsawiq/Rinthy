@@ -66,6 +66,8 @@ npm run build
 npx cap sync android
 ```
 
+If you changed Android deep link settings for OAuth, run sync again before opening Android Studio.
+
 ### Open Android Studio
 
 ```bash
@@ -78,11 +80,13 @@ From Android Studio: **Run**
 
 ## Authentication
 
-Rinthy uses a Modrinth **Personal Access Token (PAT)**.
+Rinthy uses **Modrinth OAuth** as the primary sign-in method.
 
-- Open: https://modrinth.com/settings/pats
-- Create a new token
-- Enable the required scopes (the app may ask you to enable all scopes)
+- Deploy the companion auth backend to Vercel
+- Configure the Modrinth application redirect URI to your backend callback
+- Sign in with the `Continue with Modrinth` button in the app
+
+PAT login is still available as a fallback.
 
 **Security note:** the token is stored locally on your device.
 
@@ -150,6 +154,8 @@ npm run build
 npx cap sync android
 ```
 
+Если менял Android deep link для OAuth, снова выполни sync перед открытием Android Studio.
+
 ### Открыть Android Studio
 
 ```bash
@@ -158,10 +164,12 @@ npx cap open android
 
 ## Авторизация
 
-Нужен Modrinth **Personal Access Token (PAT)**:
+Основной вход в Rinthy теперь работает через **Modrinth OAuth**.
+
+Вход по PAT оставлен как запасной вариант.
 
 - Открой: https://modrinth.com/settings/pats
 - Создай новый токен
-- Включи нужные права (иногда проще включить все галочки)
+- Выдай нужные права, если хочешь использовать PAT fallback
 
 **Важно:** токен хранится локально на устройстве.

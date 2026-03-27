@@ -58,6 +58,63 @@ interface GitHubRelease {
   assets: { name: string; browser_download_url: string }[];
 }
 
+const MODRINTH_OAUTH_BASE_URL = 'https://rinthy-auth-backend-pgae.vercel.app';
+const MODRINTH_OAUTH_STATE_KEY = 'modrinth_oauth_state';
+
+const generateOAuthState = () => {
+  try {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
+};
+
+const getStoredLanguage = (): Language => {
+  const raw = localStorage.getItem('language');
+  return raw === 'ru' ? 'ru' : 'en';
+};
+
+const getAuthMessage = (key: 'oauth_missing_token' | 'oauth_cancelled' | 'oauth_state_error' | 'oauth_backend_unavailable'): string => {
+  const lang = getStoredLanguage();
+  const messages = {
+    ru: {
+      oauth_missing_token: 'OAuth не вернул токен.',
+      oauth_cancelled: 'Вход через Modrinth был отменён.',
+      oauth_state_error: 'Ошибка входа: state не совпадает.',
+      oauth_backend_unavailable: 'Сервер авторизации недоступен. Попробуй позже или войди через PAT.'
+    },
+    en: {
+      oauth_missing_token: 'OAuth did not return a token.',
+      oauth_cancelled: 'Modrinth sign-in was cancelled.',
+      oauth_state_error: 'Sign-in failed: state mismatch.',
+      oauth_backend_unavailable: 'The auth backend is unavailable. Try again later or sign in with a PAT.'
+    }
+  };
+
+  return messages[lang][key];
+};
+
+const readOAuthCallback = (url: string) => {
+  if (!url || !url.startsWith('rinthy://auth/callback')) return null;
+
+  try {
+    const parsed = new URL(url);
+    return {
+      token: parsed.searchParams.get('token'),
+      state: parsed.searchParams.get('state'),
+      error: parsed.searchParams.get('error')
+    };
+  } catch {
+    return {
+      token: null,
+      state: null,
+      error: 'parse_error'
+    };
+  }
+};
+
 const checkForUpdates = async (): Promise<GitHubRelease | null> => {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
@@ -98,27 +155,35 @@ const ModrinthLogo = ({ className }: { className?: string }) => (
 const TRANSLATIONS = {
   ru: {
     welcome_title: 'Добро пожаловать в Rinthy',
-    welcome_subtitle: 'Выбери язык интерфейса, затем авторизуйся с помощью PAT.',
+    welcome_subtitle: 'Выбери язык интерфейса, затем войди через Modrinth OAuth.',
     choose_language: 'Язык',
     continue: 'Продолжить',
     onboarding_title: 'Rinthy',
     onboarding_desc: 'Неофициальное приложение для Modrinth для разработчиков.\nУправляй проектами, смотри аналитику и выплаты.',
     onboarding_secure_title: 'Безопасно',
-    onboarding_secure_desc: 'Токен хранится локально на устройстве.\nПрямое подключение к Modrinth API.',
+    onboarding_secure_desc: 'OAuth токен хранится локально на устройстве.\nПрямое подключение к Modrinth API.',
     onboarding_access_title: 'Доступ',
-    onboarding_access_desc: 'Нужен PAT токен со всеми галочками (scopes).',
+    onboarding_access_desc: 'Основной вход через Modrinth OAuth.\nPAT можно использовать как запасной вариант.',
     next: 'Далее',
     start: 'Начать',
     login_title: 'Вход',
-    login_subtitle: 'Вставь PAT токен',
-    authorize: 'Авторизоваться',
-    how_to_get_token: 'Как получить токен?',
-    token_help_title: 'Как получить токен?',
+    login_subtitle: 'Войди через Modrinth или используй PAT как запасной вариант',
+    authorize: 'Войти по PAT',
+    oauth_continue: 'Войти через Modrinth',
+    oauth_loading: 'Ожидание входа...',
+    use_pat_instead: 'Использовать PAT',
+    hide_pat: 'Скрыть PAT',
+    how_to_get_token: 'Как получить PAT?',
+    token_help_title: 'PAT как запасной вход',
     token_help_open: 'Открой',
     token_help_create: 'Создай новый Personal Access Token (PAT).',
-    token_help_scopes: 'Поставь все галочки (all scopes).',
+    token_help_scopes: 'Выдай только нужные права или временно используй все галочки.',
     token_help_paste: 'Скопируй токен и вставь сюда.',
     token_help_local: 'Безопасность: токен хранится локально на устройстве.',
+    oauth_state_error: 'Ошибка входа: state не совпадает.',
+    oauth_missing_token: 'OAuth не вернул токен.',
+    oauth_cancelled: 'Вход через Modrinth был отменён.',
+    oauth_backend_unavailable: 'Сервер авторизации недоступен. Попробуй позже или войди через PAT.',
     got_it: 'Понял',
     dashboard: 'Проекты',
     analytics: 'Аналитика',
@@ -133,7 +198,10 @@ const TRANSLATIONS = {
     versions: 'Версии',
     downloads: 'Загрузки',
     likes: 'Лайки',
+    summary: 'Краткое описание',
     description: 'Описание',
+    no_summary: 'Краткое описание отсутствует.',
+    no_description: 'Полное описание отсутствует.',
     client: 'Клиент',
     server: 'Сервер',
     resources: 'Ресурсы',
@@ -255,27 +323,35 @@ const TRANSLATIONS = {
   },
   en: {
     welcome_title: 'Welcome to Rinthy',
-    welcome_subtitle: 'Choose a language first, then sign in using a PAT.',
+    welcome_subtitle: 'Choose a language first, then sign in with Modrinth OAuth.',
     choose_language: 'Language',
     continue: 'Continue',
     onboarding_title: 'Rinthy',
     onboarding_desc: 'Unofficial app for Modrinth developers.\nManage projects, view analytics and payouts.',
     onboarding_secure_title: 'Secure',
-    onboarding_secure_desc: 'The token is stored locally on your device.\nDirect connection to the Modrinth API.',
+    onboarding_secure_desc: 'The OAuth token is stored locally on your device.\nDirect connection to the Modrinth API.',
     onboarding_access_title: 'Access',
-    onboarding_access_desc: 'Create a PAT and enable all permission checkboxes (all scopes).',
+    onboarding_access_desc: 'Primary sign-in uses Modrinth OAuth.\nPAT remains available as a fallback.',
     next: 'Next',
     start: 'Start',
     login_title: 'Login',
-    login_subtitle: 'Enter PAT Token',
-    authorize: 'Authorize',
-    how_to_get_token: 'How to get a token?',
-    token_help_title: 'How to get a token?',
+    login_subtitle: 'Sign in with Modrinth or use a PAT as fallback',
+    authorize: 'Sign in with PAT',
+    oauth_continue: 'Continue with Modrinth',
+    oauth_loading: 'Waiting for sign-in...',
+    use_pat_instead: 'Use PAT instead',
+    hide_pat: 'Hide PAT',
+    how_to_get_token: 'How to get a PAT?',
+    token_help_title: 'PAT fallback sign-in',
     token_help_open: 'Open',
     token_help_create: 'Create a new Personal Access Token (PAT).',
-    token_help_scopes: 'Enable all permission checkboxes (all scopes).',
+    token_help_scopes: 'Grant only the scopes you need, or temporarily use all scopes.',
     token_help_paste: 'Copy the token and paste it here.',
     token_help_local: 'Security: the token is stored locally on your device.',
+    oauth_state_error: 'Sign-in failed: state mismatch.',
+    oauth_missing_token: 'OAuth did not return a token.',
+    oauth_cancelled: 'Modrinth sign-in was cancelled.',
+    oauth_backend_unavailable: 'The auth backend is unavailable. Try again later or sign in with a PAT.',
     got_it: 'Got it',
     dashboard: 'Projects',
     analytics: 'Analytics',
@@ -290,7 +366,10 @@ const TRANSLATIONS = {
     versions: 'Versions',
     downloads: 'Downloads',
     likes: 'Follows',
+    summary: 'Summary',
     description: 'Description',
+    no_summary: 'No summary available.',
+    no_description: 'No full description available.',
     client: 'Client',
     server: 'Server',
     resources: 'Resources',
@@ -410,6 +489,41 @@ const TRANSLATIONS = {
     update_outdated: 'Outdated version',
     update_view_release: 'View release'
   }
+};
+
+type ResolvedNotification = ModrinthNotification & {
+  displayTitle: string;
+  displayText: string;
+};
+
+type NotificationEntityRef = {
+  id: string;
+  kind: 'project' | 'version' | 'unknown';
+  projectSlug?: string;
+};
+
+const MODRINTH_ID_RE = /\b[A-Za-z0-9]{8}\b/g;
+
+const replaceResolvedIds = (value: string, replacements: Record<string, string>) =>
+  value.replace(MODRINTH_ID_RE, (match) => replacements[match] || match);
+
+const getNotificationEntityRefs = (notif: ModrinthNotification): NotificationEntityRef[] => {
+  const refs = new Map<string, NotificationEntityRef>();
+  const raw = `${notif.title} ${notif.text} ${notif.link || ''}`;
+  for (const match of raw.matchAll(MODRINTH_ID_RE)) {
+    refs.set(match[0], { id: match[0], kind: 'unknown' });
+  }
+
+  const link = notif.link || '';
+  const projectMatch = link.match(/\/project\/([^/?#]+)/);
+  const versionMatch = link.match(/\/version\/([^/?#]+)/);
+  const projectSlug = projectMatch?.[1];
+  if (projectSlug) refs.set(projectSlug, { id: projectSlug, kind: 'project' });
+  if (versionMatch) {
+    refs.set(versionMatch[1], { id: versionMatch[1], kind: 'version', projectSlug });
+  }
+
+  return Array.from(refs.values());
 };
 
 // --- Settings Context ---
@@ -546,8 +660,9 @@ const Onboarding: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   );
 };
 
-const LoginScreen: React.FC<{ onLogin: (token: string) => void; isLoading: boolean; error: string | null; onShowHelp: () => void; savedToken?: string | null }> = ({ onLogin, isLoading, error, onShowHelp, savedToken }) => {
+const LoginScreen: React.FC<{ onLogin: (token: string) => void; onStartOAuth: () => void; isLoading: boolean; error: string | null; onShowHelp: () => void; savedToken?: string | null }> = ({ onLogin, onStartOAuth, isLoading, error, onShowHelp, savedToken }) => {
   const [tokenInput, setTokenInput] = useState(savedToken || '');
+  const [showPatLogin, setShowPatLogin] = useState(false);
 
   useEffect(() => {
     if (!tokenInput && savedToken) {
@@ -566,14 +681,28 @@ const LoginScreen: React.FC<{ onLogin: (token: string) => void; isLoading: boole
         <h1 className="text-3xl font-bold text-center text-modrinth-text mb-2">{t('login_title')}</h1>
         <p className="text-modrinth-muted text-center text-sm mb-8">{t('login_subtitle')}</p>
         <div className="space-y-4">
-          <div className="bg-modrinth-card/75 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_26px_rgba(0,0,0,0.25)]">
-            <input type="password" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)} placeholder="mrp_..." className="w-full bg-transparent text-modrinth-text p-4 outline-none text-center font-mono" />
-          </div>
           {error && <div className="text-red-400 text-sm text-center bg-red-500/10 p-3 rounded-xl border border-red-500/20">{error}</div>}
-          <button onClick={() => onLogin(tokenInput)} disabled={isLoading || !tokenInput} className="w-full bg-modrinth-green text-white font-bold py-4 rounded-2xl active:scale-[0.98] flex items-center justify-center shadow-lg shadow-modrinth-green/20">
-            {isLoading ? <Loader2 className="animate-spin" /> : t('authorize')}
+          <button onClick={onStartOAuth} disabled={isLoading} className="w-full bg-modrinth-green text-white font-bold py-4 rounded-2xl active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg shadow-modrinth-green/20">
+            {isLoading ? <Loader2 className="animate-spin" /> : <Globe size={18} />}
+            {isLoading ? t('oauth_loading') : t('oauth_continue')}
           </button>
-          <button onClick={onShowHelp} className="w-full text-xs text-center text-modrinth-muted mt-4 hover:text-modrinth-green underline decoration-dotted">{t('how_to_get_token')}</button>
+          <button
+            onClick={() => setShowPatLogin(prev => !prev)}
+            className="w-full text-xs text-center text-modrinth-muted hover:text-modrinth-green underline decoration-dotted"
+          >
+            {showPatLogin ? t('hide_pat') : t('use_pat_instead')}
+          </button>
+          {showPatLogin && (
+            <div className="space-y-3 pt-2">
+              <div className="bg-modrinth-card/75 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_26px_rgba(0,0,0,0.25)]">
+                <input type="password" value={tokenInput} onChange={(e) => setTokenInput(e.target.value)} placeholder="mrp_..." className="w-full bg-transparent text-modrinth-text p-4 outline-none text-center font-mono" />
+              </div>
+              <button onClick={() => onLogin(tokenInput)} disabled={isLoading || !tokenInput} className="w-full bg-modrinth-card text-modrinth-text font-bold py-4 rounded-2xl active:scale-[0.98] flex items-center justify-center border border-modrinth-border">
+                {isLoading ? <Loader2 className="animate-spin" /> : t('authorize')}
+              </button>
+              <button onClick={onShowHelp} className="w-full text-xs text-center text-modrinth-muted hover:text-modrinth-green underline decoration-dotted">{t('how_to_get_token')}</button>
+            </div>
+          )}
         </div>
       </div>
       <div className="absolute bottom-6 text-[10px] text-modrinth-muted text-center w-full">
@@ -668,6 +797,7 @@ const UpdateModal: React.FC<{ release: GitHubRelease; onClose: () => void }> = (
 
 const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user: ModrinthUser; token: string; onUnreadCountChange?: (count: number) => void }> = ({ isOpen, onClose, user, token, onUnreadCountChange }) => {
     const [notifs, setNotifs] = useState<ModrinthNotification[]>([]);
+    const [resolvedNotifs, setResolvedNotifs] = useState<ResolvedNotification[]>([]);
     const [loading, setLoading] = useState(true);
     const { t, theme } = useSettings();
 
@@ -685,6 +815,72 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                 .finally(() => setLoading(false));
         }
     }, [isOpen, user.id, token, onUnreadCountChange]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const resolveNotifications = async () => {
+            if (notifs.length === 0) {
+                setResolvedNotifs([]);
+                return;
+            }
+
+            const replacements: Record<string, string> = {};
+            const entityRefs = Array.from(
+                new Map(
+                    notifs
+                        .flatMap(getNotificationEntityRefs)
+                        .map((ref) => [ref.id, ref] as const)
+                ).values()
+            );
+
+            await Promise.all(entityRefs.map(async ({ id, kind, projectSlug }) => {
+                if (kind === 'version') {
+                    if (!projectSlug) {
+                        return;
+                    }
+
+                    try {
+                        const versions = await fetchProjectVersions(projectSlug, token);
+                        const version = versions.find((item) => item.id === id);
+                        if (version) {
+                            replacements[id] = version.name || version.version_number || id;
+                        }
+                    } catch {
+                        // Leave unresolved version IDs untouched.
+                    }
+                    return;
+                }
+
+                if (kind === 'project' || kind === 'unknown') {
+                    try {
+                        const project = await fetchProject(id, token);
+                        replacements[id] = project.title || id;
+                        replacements[project.id] = project.title || project.id;
+                        replacements[project.slug] = project.title || project.slug;
+                    } catch {
+                        // Leave unknown IDs untouched.
+                    }
+                }
+            }));
+
+            if (cancelled) return;
+
+            setResolvedNotifs(
+                notifs.map((notif) => ({
+                    ...notif,
+                    displayTitle: replaceResolvedIds(notif.title, replacements),
+                    displayText: replaceResolvedIds(notif.text, replacements)
+                }))
+            );
+        };
+
+        resolveNotifications().catch(console.error);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [notifs, token]);
 
     const handleRead = async (id: string) => {
         try {
@@ -748,11 +944,11 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                             <p>{t('no_notifications')}</p>
                         </div>
                     )}
-                    {notifs.map(n => (
+                    {resolvedNotifs.map(n => (
                         <div key={n.id} className={`${cardClass} p-4 rounded-3xl flex gap-3 relative group overflow-hidden`}>
                             <div className="flex-1 relative min-w-0">
-                                <h4 className="text-sm font-bold text-modrinth-text mb-1">{n.title}</h4>
-                                <p className="text-xs text-modrinth-muted leading-relaxed mb-2">{n.text}</p>
+                                <h4 className="text-sm font-bold text-modrinth-text mb-1">{n.displayTitle}</h4>
+                                <p className="text-xs text-modrinth-muted leading-relaxed mb-2">{n.displayText}</p>
                                 <div className="flex items-center gap-3 text-[10px] text-modrinth-muted/70">
                                     <span>{new Date(n.created).toLocaleDateString()}</span>
                                     {n.link && <a href={`https://modrinth.com${n.link}`} target="_blank" rel="noreferrer" className="text-modrinth-green hover:underline flex items-center gap-1 truncate">View <ExternalLink size={8}/></a>}
@@ -1250,6 +1446,9 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       v = v.replace(/\[(.+?)\]\((https?:[^\s)]+)\)/gim, (_m, text, href) =>
         stash(`<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`)
       );
+      v = v.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/gim, (_m, prefix, href) =>
+        `${prefix}${stash(`<a href="${href}" target="_blank" rel="noopener noreferrer">${href}</a>`)}`
+      );
 
       v = v.replace(/`([^`]+)`/gim, '<code>$1<\/code>');
       v = v.replace(/\*\*(.*?)\*\*/gim, '<strong>$1<\/strong>');
@@ -1271,11 +1470,18 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
     let inList = false;
     let lastWasH1 = false;
     let paragraphParts: string[] = [];
+    let blockquoteParts: string[] = [];
 
     const flushParagraph = () => {
       if (paragraphParts.length === 0) return;
       htmlParts.push(`<p>${paragraphParts.join(' ')}<\/p>`);
       paragraphParts = [];
+    };
+
+    const flushBlockquote = () => {
+      if (blockquoteParts.length === 0) return;
+      htmlParts.push(`<blockquote><p>${blockquoteParts.join('<br/>')}<\/p><\/blockquote>`);
+      blockquoteParts = [];
     };
 
     for (let raw of lines) {
@@ -1284,6 +1490,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
 
       if (!line.trim()) {
         flushParagraph();
+        flushBlockquote();
         if (inList) {
           htmlParts.push('</ul>');
           inList = false;
@@ -1295,6 +1502,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       const h3 = /^###\s+(.*)/.exec(content);
       if (h3) {
         flushParagraph();
+        flushBlockquote();
         if (inList) {
           htmlParts.push('</ul>');
           inList = false;
@@ -1306,6 +1514,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       const h2 = /^##\s+(.*)/.exec(content);
       if (h2) {
         flushParagraph();
+        flushBlockquote();
         if (inList) {
           htmlParts.push('</ul>');
           inList = false;
@@ -1317,6 +1526,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       const h1 = /^#\s+(.*)/.exec(content);
       if (h1) {
         flushParagraph();
+        flushBlockquote();
         if (inList) {
           htmlParts.push('</ul>');
           inList = false;
@@ -1328,6 +1538,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
 
       if (/^-{3,}\s*$/.test(content)) {
         flushParagraph();
+        flushBlockquote();
         if (lastWasH1) {
           lastWasH1 = false;
           continue;
@@ -1344,6 +1555,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       const li = /^-\s+(.*)/.exec(content);
       if (li) {
         flushParagraph();
+        flushBlockquote();
         if (!inList) {
           htmlParts.push('<ul>');
           inList = true;
@@ -1360,10 +1572,12 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
           htmlParts.push('</ul>');
           inList = false;
         }
-        htmlParts.push(`<blockquote>${formatInline(bq[1])}<\/blockquote>`);
+        blockquoteParts.push(formatInline(bq[1]));
         lastWasH1 = false;
         continue;
       }
+
+      flushBlockquote();
 
       if (inList) {
         htmlParts.push('</ul>');
@@ -1375,6 +1589,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
     }
 
     flushParagraph();
+    flushBlockquote();
     if (inList) {
       htmlParts.push('</ul>');
     }
@@ -1493,6 +1708,8 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
   if (loading && !project) return <div className="h-screen flex items-center justify-center bg-modrinth-bg"><Loader2 className="animate-spin text-modrinth-green w-10 h-10" /></div>;
   if (!project) return <div className="h-screen flex items-center justify-center bg-modrinth-bg text-modrinth-text">Not Found</div>;
 
+  const projectSummary = (project.description || '').trim();
+
   return (
     <div
       className="min-h-screen bg-modrinth-bg pb-10 relative z-0 animate-fade-in"
@@ -1550,8 +1767,19 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
                 </div>
              </div>
              <div className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-5 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
-                <h3 className="text-modrinth-text font-bold mb-2 text-sm flex items-center gap-2"><Info size={16} className="text-modrinth-green"/> {t('description')}</h3>
-                <p className="text-modrinth-text/80 leading-relaxed text-sm">{project.description}</p>
+                <h3 className="text-modrinth-text font-bold mb-2 text-sm flex items-center gap-2"><Info size={16} className="text-modrinth-green"/> {t('summary')}</h3>
+                <p className="text-modrinth-text/80 leading-relaxed text-sm">{projectSummary || t('no_summary')}</p>
+             </div>
+             <div className="bg-modrinth-card/75 backdrop-blur-xl rounded-3xl p-5 shadow-[0_10px_26px_rgba(0,0,0,0.22)] relative overflow-hidden">
+                <h3 className="text-modrinth-text font-bold mb-2 text-sm flex items-center gap-2"><FileText size={16} className="text-modrinth-green"/> {t('description')}</h3>
+                {project.body?.trim() ? (
+                  <div
+                    className="text-modrinth-text/80 leading-relaxed text-sm markdown-preview"
+                    dangerouslySetInnerHTML={renderMarkdown(project.body)}
+                  />
+                ) : (
+                  <p className="text-modrinth-text/80 leading-relaxed text-sm">{t('no_description')}</p>
+                )}
              </div>
              <div className="grid grid-cols-2 gap-4">
                <div className="bg-modrinth-card/75 backdrop-blur-xl p-4 rounded-3xl shadow-[0_10px_26px_rgba(0,0,0,0.2)] relative overflow-hidden">
@@ -2905,12 +3133,76 @@ const App: React.FC = () => {
     initAuth();
   }, [authState.token]);
 
+  useEffect(() => {
+    if (!CapApp || typeof (CapApp as any).addListener !== 'function') return;
+
+    const processOAuthCallback = (url: string) => {
+      const payload = readOAuthCallback(url);
+      if (!payload) return;
+
+      if (payload.error === 'parse_error') {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_missing_token') }));
+        return;
+      }
+
+      const { token, state, error } = payload;
+      const expectedState = localStorage.getItem(MODRINTH_OAUTH_STATE_KEY);
+
+      if (error) {
+        localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_cancelled') }));
+        return;
+      }
+
+      if (!state || !expectedState || state !== expectedState) {
+        localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_state_error') }));
+        return;
+      }
+
+      localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+
+      if (!token) {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_missing_token') }));
+        return;
+      }
+
+      handleLogin(token);
+    };
+
+    CapApp.getLaunchUrl?.()
+      .then((result) => {
+        if (result?.url) {
+          processOAuthCallback(result.url);
+        }
+      })
+      .catch(() => {});
+
+    const handleAppUrlOpen = CapApp.addListener('appUrlOpen', ({ url }) => {
+      processOAuthCallback(url);
+    });
+
+    return () => {
+      handleAppUrlOpen.then(listener => listener.remove()).catch(() => {});
+    };
+  }, []);
+
   const handleLogin = async (token: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const user = await fetchCurrentUser(token);
       localStorage.setItem('modrinth_token', token);
-      setAuthState({ ...authState, token, user, isLoading: false, error: null });
+      localStorage.setItem('has_seen_onboarding', 'true');
+      localStorage.setItem('has_seen_welcome', 'true');
+      setHasSeenWelcome(true);
+      setAuthState(prev => ({
+        ...prev,
+        token,
+        user,
+        isLoading: false,
+        error: null,
+        hasSeenOnboarding: true
+      }));
     } catch (err) {
       const status = (err as any)?.status;
       if (status === 401 || status === 403) {
@@ -2921,8 +3213,37 @@ const App: React.FC = () => {
     }
   };
 
+  const handleStartOAuth = async () => {
+    try {
+      const healthResponse = await fetch(`${MODRINTH_OAUTH_BASE_URL}/api/health`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+
+      if (!healthResponse.ok) {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_backend_unavailable') }));
+        return;
+      }
+
+      const health = await healthResponse.json().catch(() => null);
+      if (!health?.ok) {
+        setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_backend_unavailable') }));
+        return;
+      }
+    } catch {
+      setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_backend_unavailable') }));
+      return;
+    }
+
+    const state = generateOAuthState();
+    localStorage.setItem(MODRINTH_OAUTH_STATE_KEY, state);
+    setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+    window.location.href = `${MODRINTH_OAUTH_BASE_URL}/api/modrinth/start?state=${encodeURIComponent(state)}`;
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('modrinth_token');
+    localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
     setAuthState(prev => ({ ...prev, token: null, user: null }));
   };
 
@@ -2951,6 +3272,7 @@ const App: React.FC = () => {
          <>
            <LoginScreen 
               onLogin={handleLogin} 
+              onStartOAuth={handleStartOAuth}
               isLoading={authState.isLoading} 
               error={authState.error} 
               onShowHelp={() => setShowHelp(true)}
