@@ -1,4 +1,11 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.application'
+
+def packageJson = new JsonSlurper().parse(file('../../package.json'))
+def packageVersion = packageJson.version as String
+def versionParts = packageVersion.tokenize('-')[0].tokenize('.').collect { it as int }
+def androidVersionCode = (versionParts[0] * 10000) + ((versionParts.size() > 1 ? versionParts[1] : 0) * 100) + (versionParts.size() > 2 ? versionParts[2] : 0)
 
 android {
     namespace "com.rinthy.mobile"
@@ -7,8 +14,8 @@ android {
         applicationId "com.rinthy.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode androidVersionCode
+        versionName packageVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

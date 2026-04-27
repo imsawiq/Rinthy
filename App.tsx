@@ -604,6 +604,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
     const [resolvedNotifs, setResolvedNotifs] = useState<ResolvedNotification[]>([]);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
+    const [pendingReadIds, setPendingReadIds] = useState<Set<string>>(() => new Set());
     const { t, theme, language } = useSettings();
 
     useEffect(() => {
@@ -741,45 +742,89 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
         });
     }, [groupedNotifs]);
 
+    const removeUnreadNotifications = (ids: string[]) => {
+        const idSet = new Set(ids);
+        setNotifs((prev) => {
+            const next = prev.filter((notif) => !idSet.has(notif.id));
+            onUnreadCountChange?.(next.length);
+            return next;
+        });
+    };
+
+    const restoreUnreadNotifications = (items: ModrinthNotification[]) => {
+        if (items.length === 0) return;
+        setNotifs((prev) => {
+            const existingIds = new Set(prev.map((notif) => notif.id));
+            const next = [...prev, ...items.filter((notif) => !existingIds.has(notif.id))]
+                .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+            onUnreadCountChange?.(next.length);
+            return next;
+        });
+    };
+
     const handleRead = async (id: string) => {
+        if (pendingReadIds.has(id)) return;
+        const removed = notifs.filter((notif) => notif.id === id);
         try {
+            setPendingReadIds((prev) => new Set(prev).add(id));
+            removeUnreadNotifications([id]);
             await markNotificationRead(id, token);
-            // Remove immediately from UI
-            setNotifs(prev => {
-              const next = prev.filter(n => n.id !== id);
-              onUnreadCountChange?.(next.length);
-              return next;
+        } catch (e) {
+            restoreUnreadNotifications(removed);
+            console.error(e);
+        } finally {
+            setPendingReadIds((prev) => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
             });
-        } catch (e) { console.error(e); }
+        }
     };
 
     const handleReadAll = async () => {
         const ids = notifs.map(n => n.id);
         if (ids.length === 0) return;
+        const removed = [...notifs];
         try {
             setLoading(true);
+            setPendingReadIds(new Set(ids));
+            removeUnreadNotifications(ids);
             await markMultipleNotificationsRead(ids, token);
-            setNotifs([]);
-            onUnreadCountChange?.(0);
-        } catch(e) { console.error(e); }
-        setLoading(false);
+        } catch(e) {
+            restoreUnreadNotifications(removed);
+            console.error(e);
+        } finally {
+            setPendingReadIds(new Set());
+            setLoading(false);
+        }
     };
 
     const handleReadGroup = async (ids: string[]) => {
         if (ids.length === 0) return;
+        if (ids.some((id) => pendingReadIds.has(id))) return;
+        const idSet = new Set(ids);
+        const removed = notifs.filter((notif) => idSet.has(notif.id));
         try {
+            setPendingReadIds((prev) => {
+                const next = new Set(prev);
+                ids.forEach((id) => next.add(id));
+                return next;
+            });
+            removeUnreadNotifications(ids);
             if (ids.length === 1) {
                 await markNotificationRead(ids[0], token);
             } else {
                 await markMultipleNotificationsRead(ids, token);
             }
-            setNotifs((prev) => {
-                const next = prev.filter((notif) => !ids.includes(notif.id));
-                onUnreadCountChange?.(next.length);
+        } catch (e) {
+            restoreUnreadNotifications(removed);
+            console.error(e);
+        } finally {
+            setPendingReadIds((prev) => {
+                const next = new Set(prev);
+                ids.forEach((id) => next.delete(id));
                 return next;
             });
-        } catch (e) {
-            console.error(e);
         }
     };
 
@@ -883,7 +928,11 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                                     </div>
                                                 </div>
                                                 {group.items.length === 1 && (
-                                                    <button onClick={() => handleRead(item.id)} className="relative text-modrinth-green hover:bg-modrinth-green/10 self-start p-1.5 rounded-full transition-colors">
+                                                    <button
+                                                        onClick={() => handleRead(item.id)}
+                                                        disabled={pendingReadIds.has(item.id)}
+                                                        className="relative text-modrinth-green hover:bg-modrinth-green/10 self-start p-1.5 rounded-full transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                                                    >
                                                         <Check size={16}/>
                                                     </button>
                                                 )}
@@ -908,11 +957,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                 <div className="mt-3 flex items-center justify-between gap-3">
                                     <button
                                         onClick={() => handleReadGroup(groupActionIds)}
+                                        disabled={groupActionIds.some((id) => pendingReadIds.has(id))}
                                         className={`text-xs font-bold px-3.5 py-2 rounded-full transition-colors flex items-center gap-1.5 ${
                                           theme === 'light'
                                             ? 'bg-black/[0.05] text-black/70 hover:bg-black/10'
                                             : 'bg-modrinth-cardHover text-modrinth-text hover:bg-modrinth-border/70'
-                                        }`}
+                                        } disabled:opacity-50 disabled:pointer-events-none`}
                                     >
                                         <Check size={14} /> {t('mark_group_as_read')}
                                     </button>
