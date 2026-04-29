@@ -671,6 +671,28 @@ export const searchUser = async (username: string): Promise<UserSearchResult[]> 
   }
 };
 
+export const searchProjects = async (query: string): Promise<ModrinthProject[]> => {
+  if (!query) return [];
+  const response = await fetch(`${BASE_URL}/search?query=${encodeURIComponent(query)}`);
+  if (!response.ok) throw new Error('Search failed');
+  const data = await response.json();
+  return data.hits.map((hit: any) => ({
+    id: hit.project_id,
+    slug: hit.slug,
+    title: hit.title,
+    description: hit.description,
+    categories: hit.categories,
+    client_side: hit.client_side,
+    server_side: hit.server_side,
+    icon_url: hit.icon_url,
+    downloads: hit.downloads,
+    followers: hit.follows,
+    status: hit.status,
+    published: hit.date_created,
+    updated: hit.date_modified
+  }));
+};
+
 // --- Team Members API ---
 
 export const fetchProjectMembers = async (slug: string, token: string): Promise<ProjectMember[]> => {

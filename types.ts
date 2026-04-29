@@ -153,6 +153,7 @@ export interface ModifyUserPayload {
 
 export enum NavTab {
   PROJECTS = 'projects',
+  MODPACK = 'modpack',
   ANALYTICS = 'analytics',
   SETTINGS = 'settings'
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavTab } from '../types';
-import { Grid, BarChart2, Settings } from 'lucide-react';
+import { Grid, BarChart2, Settings, Package } from 'lucide-react';
 import type { ThemeMode } from '../types';
 
 interface BottomNavProps {
@@ -13,6 +13,7 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t, theme }) => {
   const navItems = [
     { id: NavTab.PROJECTS, icon: Grid, label: t('dashboard') },
+    { id: NavTab.MODPACK, icon: Package, label: t('modpack_creator') },
     { id: NavTab.ANALYTICS, icon: BarChart2, label: t('analytics') },
     { id: NavTab.SETTINGS, icon: Settings, label: t('settings') },
   ];
