@@ -3,6 +3,7 @@
 declare const __APP_VERSION__: string;
 import { HashRouter, Routes, Route, useNavigate, useParams, Outlet, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, Archive, Lock, EyeOff, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, Calendar, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical } from 'lucide-react';
 import { fetchCurrentUser, fetchUserProjects, fetchProject, updateProject, fetchProjectMembers, deleteTeamMember, updateTeamMember, searchUser, addTeamMember, modifyUser, fetchNotifications, deleteNotification, markNotificationRead, markMultipleNotificationsRead, changeProjectIcon, deleteProjectIcon, addGalleryImage, deleteGalleryImage, fetchProjectDependencies, fetchProjectVersions, fetchGameVersionTags, fetchLoaderTags, modifyVersion, deleteVersionById, fetchUserPayoutHistoryWithStatus, fetchUserByIdWithStatus, fetchPayoutBalanceV3WithStatus, joinTeam, transferTeamOwnership } from './services/modrinthService';
 import { AuthState, ModrinthUser, ModrinthProject, NavTab, ProjectMember, SettingsContextType, ThemeMode, Language, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthPayoutHistory } from './types';
@@ -51,6 +52,12 @@ const BackButtonHandler: React.FC = () => {
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '1.0.0';
 const GITHUB_REPO = 'imsawiq/Rinthy';
 
+interface UpdateInstallerPlugin {
+  downloadAndInstall(options: { url: string; fileName?: string; title?: string }): Promise<void>;
+}
+
+const UpdateInstaller = registerPlugin<UpdateInstallerPlugin>('UpdateInstaller');
+
 interface GitHubRelease {
   tag_name: string;
   name: string;
@@ -60,7 +67,7 @@ interface GitHubRelease {
   assets: { name: string; browser_download_url: string }[];
 }
 
-const MODRINTH_OAUTH_BASE_URL = 'https://rinthy-auth-backend-pgae.vercel.app';
+const MODRINTH_OAUTH_BASE_URL = 'https://rinthy-auth.vercel.app';
 const MODRINTH_OAUTH_STATE_KEY = 'modrinth_oauth_state';
 const DISCORD_INVITE_URL = 'https://discord.gg/frd5Cw7xPj';
 
@@ -131,6 +138,29 @@ const checkForUpdates = async (): Promise<GitHubRelease | null> => {
     console.error('Update check failed:', e);
   }
   return null;
+};
+
+const findApkAsset = (release: GitHubRelease) =>
+  release.assets.find(a => a.name.toLowerCase().endsWith('.apk'));
+
+const installReleaseUpdate = async (release: GitHubRelease): Promise<void> => {
+  const apkAsset = findApkAsset(release);
+
+  if (!apkAsset) {
+    window.open(release.html_url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  if (Capacitor.isNativePlatform()) {
+    await UpdateInstaller.downloadAndInstall({
+      url: apkAsset.browser_download_url,
+      fileName: apkAsset.name,
+      title: `Rinthy ${release.tag_name}`
+    });
+    return;
+  }
+
+  window.open(apkAsset.browser_download_url, '_blank', 'noopener,noreferrer');
 };
 
 const compareVersions = (a: string, b: string): number => {
@@ -539,8 +569,18 @@ const TokenHelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 // --- Update Modal ---
 const UpdateModal: React.FC<{ release: GitHubRelease; onClose: () => void }> = ({ release, onClose }) => {
   const { t, theme } = useSettings();
+  const [isInstalling, setIsInstalling] = useState(false);
   const version = release.tag_name.replace(/^v/, '');
-  const apkAsset = release.assets.find(a => a.name.endsWith('.apk'));
+
+  const handleInstall = async () => {
+    try {
+      setIsInstalling(true);
+      await installReleaseUpdate(release);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : t('update_install_failed'));
+      setIsInstalling(false);
+    }
+  };
 
   const overlayClass = theme === 'light' ? 'bg-black/40' : 'bg-black/60';
   const modalClass = theme === 'light'
@@ -585,14 +625,15 @@ const UpdateModal: React.FC<{ release: GitHubRelease; onClose: () => void }> = (
           >
             {t('update_later')}
           </button>
-          <a
-            href={apkAsset?.browser_download_url || release.html_url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 py-3 rounded-2xl font-bold text-sm bg-modrinth-green text-white text-center flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+          <button
+            type="button"
+            onClick={handleInstall}
+            disabled={isInstalling}
+            className="flex-1 py-3 rounded-2xl font-bold text-sm bg-modrinth-green text-white text-center flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-70"
           >
-            <Download size={16} /> {t('update_download')}
-          </a>
+            {isInstalling ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isInstalling ? t('update_installing') : t('update_download')}
+          </button>
         </div>
       </div>
     </div>
@@ -3235,6 +3276,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
   const [currUser, setCurrUser] = useState(user);
   const [colorInput, setColorInput] = useState(accentColor);
   const [settingsRelease, setSettingsRelease] = useState<GitHubRelease | null>(updateInfo ?? null);
+  const [isInstallingUpdate, setIsInstallingUpdate] = useState(false);
   const latestVersion = settingsRelease?.tag_name.replace(/^v/, '') || null;
   const isOutdated = latestVersion ? compareVersions(latestVersion, APP_VERSION) > 0 : false;
 
@@ -3248,6 +3290,16 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
       if (release) setSettingsRelease(release);
     });
   }, [settingsRelease]);
+
+  const handleInstallUpdate = async (release: GitHubRelease) => {
+    try {
+      setIsInstallingUpdate(true);
+      await installReleaseUpdate(release);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : t('update_install_failed'));
+      setIsInstallingUpdate(false);
+    }
+  };
 
   return (
     <div className="px-4 pb-20 animate-fade-in">
@@ -3277,14 +3329,15 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
               <div className="text-xs text-modrinth-muted mb-3">
                 {t('update_current')}: {APP_VERSION} · {t('update_new_version')}: {latestVersion}
               </div>
-              <a
-                href={settingsRelease.assets.find(a => a.name.endsWith('.apk'))?.browser_download_url || settingsRelease.html_url}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={() => handleInstallUpdate(settingsRelease)}
+                disabled={isInstallingUpdate}
                 className="inline-flex items-center gap-2 text-xs font-bold text-modrinth-green bg-modrinth-bg px-3 py-1.5 rounded-lg"
               >
-                <ExternalLink size={12} /> {t('update_view_release')}
-              </a>
+                {isInstallingUpdate ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                {isInstallingUpdate ? t('update_installing') : t('update_download')}
+              </button>
             </div>
           </div>
         </div>

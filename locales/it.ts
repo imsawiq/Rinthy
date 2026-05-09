@@ -192,5 +192,7 @@ export const it = { // Italian translation made by EmanuelPlays
     update_later: 'Più tardi',
     update_whats_new: 'Novità',
     update_outdated: 'Versione obsoleta',
-    update_view_release: 'Vedi release'
+    update_view_release: 'Vedi release',
+    update_installing: 'Installazione...',
+    update_install_failed: 'Impossibile avviare l’installer Android. Consenti installazioni da questa fonte e riprova.'
 } as const;

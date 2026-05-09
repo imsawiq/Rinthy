@@ -196,4 +196,6 @@ export const fr = {
   update_whats_new: "Quoi de neuf",
   update_outdated: "Version obsolète",
   update_view_release: "Voir la version",
+  update_installing: "Installation...",
+  update_install_failed: "Impossible de lancer l'installateur Android. Autorisez les installations depuis cette source puis réessayez.",
 } as const;
