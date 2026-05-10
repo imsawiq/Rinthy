@@ -3,6 +3,7 @@ import { ru } from "./ru";
 import { de } from "./de";
 import { it } from "./it";
 import { fr } from "./fr";
+import { pl } from "./pl";
 
 export const TRANSLATIONS = {
   en,
@@ -10,6 +11,7 @@ export const TRANSLATIONS = {
   de,
   it,
   fr,
+  pl,
 } as const;
 
 export type Language = keyof typeof TRANSLATIONS;
@@ -23,6 +25,7 @@ export const LANGUAGE_OPTIONS = [
   { code: "de", label: "German", nativeLabel: "Deutsch" },
   { code: "it", label: "Italian", nativeLabel: "Italiano" },
   { code: "fr", label: "French", nativeLabel: "Français" },
+  { code: "pl", label: "Polish", nativeLabel: "Polski" },
 ] as const satisfies ReadonlyArray<{
   code: Language;
   label: string;
