@@ -26,25 +26,25 @@ body {
 .theme-glass,
 .theme-glass body {
   background:
-    radial-gradient(circle at 16% 0%, rgba(124, 245, 189, 0.18), transparent 28rem),
-    radial-gradient(circle at 88% 12%, rgba(88, 166, 255, 0.12), transparent 24rem),
-    linear-gradient(145deg, #06100f 0%, #0a1418 46%, #11100c 100%) !important;
+    radial-gradient(circle at 18% -8%, rgba(169, 199, 220, 0.12), transparent 28rem),
+    radial-gradient(circle at 86% 10%, rgba(135, 151, 168, 0.08), transparent 24rem),
+    linear-gradient(145deg, #090b0e 0%, #10141a 48%, #0b0d10 100%) !important;
 }
 
 .theme-glass #root {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 15rem),
+    linear-gradient(180deg, rgba(246, 250, 252, 0.035), transparent 15rem),
     transparent;
 }
 
 .theme-glass .app-panel,
 .theme-glass [class*='bg-modrinth-card/'][class*='backdrop-blur-xl'] {
-  border-color: rgba(207, 255, 237, 0.18) !important;
-  background: linear-gradient(145deg, rgba(23, 38, 37, 0.78), rgba(10, 18, 20, 0.54)) !important;
+  border-color: rgba(224, 236, 245, 0.17) !important;
+  background: linear-gradient(145deg, rgba(31, 36, 43, 0.76), rgba(12, 15, 19, 0.58)) !important;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 1px 0 rgba(246, 250, 252, 0.12) inset,
     0 18px 46px rgba(0, 0, 0, 0.38),
-    0 0 0 1px rgba(124, 245, 189, 0.035) !important;
+    0 0 0 1px rgba(246, 250, 252, 0.025) !important;
   backdrop-filter: blur(22px) saturate(1.24) !important;
   -webkit-backdrop-filter: blur(22px) saturate(1.24) !important;
 }
@@ -57,15 +57,15 @@ body {
 .theme-glass .app-switch,
 .theme-glass .app-responsive-sheet,
 .theme-glass .app-toast {
-  border-color: rgba(207, 255, 237, 0.16);
-  background: rgba(9, 18, 19, 0.52);
+  border-color: rgba(224, 236, 245, 0.15);
+  background: rgba(16, 20, 25, 0.54);
   backdrop-filter: blur(18px) saturate(1.18);
   -webkit-backdrop-filter: blur(18px) saturate(1.18);
 }
 
 .theme-glass .app-topbar {
-  border-bottom-color: rgba(207, 255, 237, 0.12);
-  background: rgba(7, 16, 15, 0.72);
+  border-bottom-color: rgba(224, 236, 245, 0.11);
+  background: rgba(11, 13, 16, 0.72);
   backdrop-filter: blur(22px) saturate(1.22);
   -webkit-backdrop-filter: blur(22px) saturate(1.22);
 }
@@ -80,7 +80,7 @@ body {
 .theme-glass .app-command:hover,
 .theme-glass .app-select-control:hover,
 .theme-glass .app-input:focus {
-  box-shadow: 0 0 0 3px rgba(124, 245, 189, 0.12);
+  box-shadow: 0 0 0 3px rgba(88, 201, 141, 0.09);
 }
 
 button,
