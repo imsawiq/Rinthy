@@ -79,10 +79,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
           }
           return <p>{children}</p>;
         },
-        a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+        a: ({ node: _node, ref: _ref, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
         center: ({ node: _node, children }) => <div className="markdown-center">{children}</div>,
-        img: ({ node: _node, ...props }) => <img {...props} loading="lazy" decoding="async" alt={props.alt || ''} />,
-        iframe: ({ node: _node, src, ...props }) => {
+        img: ({ node: _node, ref: _ref, ...props }) => <img {...props} loading="lazy" decoding="async" alt={props.alt || ''} />,
+        iframe: ({ node: _node, ref: _ref, src, ...props }) => {
           const allowed =
             typeof src === 'string' &&
             /^(https:\/\/(www\.)?youtube\.com\/embed\/|https:\/\/youtube\.com\/embed\/|https:\/\/www\.youtube-nocookie\.com\/embed\/|https:\/\/discord\.com\/widget\?)/i.test(src);
@@ -91,7 +91,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
 
           return <iframe src={src} loading="lazy" referrerPolicy="no-referrer" {...props} />;
         },
-        code: ({ node: _node, className: codeClassName, children, ...props }) => (
+        code: ({ node: _node, ref: _ref, className: codeClassName, children, ...props }) => (
           <code className={codeClassName} {...props}>
             {children}
           </code>

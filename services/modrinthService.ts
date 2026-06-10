@@ -1,4 +1,4 @@
-import { ModrinthProject, ModrinthUser, ModrinthPayoutHistory, ProjectMember, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthOrganization, CreateModrinthVersionPayload, ModrinthOrganizationPayload, CreateModrinthProjectPayload } from '../types';
+import { ModrinthProject, ModrinthUser, ModrinthPayoutHistory, ProjectMember, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthOrganization, CreateModrinthVersionPayload, ModrinthOrganizationPayload, CreateModrinthProjectPayload, ModrinthAnalyticsPoint, ModrinthAnalyticsRequest } from '../types';
 
 const BASE_URL = 'https://api.modrinth.com/v2';
 const BASE_URL_V3 = 'https://api.modrinth.com/v3';
@@ -45,6 +45,19 @@ const normalizeAuthorization = (token: string) => {
   return trimmed;
 };
 
+const getTokenCacheKey = (token: string) => {
+  const normalized = normalizeAuthorization(token);
+  if (!normalized) return 'anonymous';
+
+  let hash = 2166136261;
+  for (let i = 0; i < normalized.length; i++) {
+    hash ^= normalized.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return `${normalized.length}:${(hash >>> 0).toString(36)}`;
+};
+
 const getHeaders = (token: string) => ({
   'Authorization': normalizeAuthorization(token),
   'User-Agent': USER_AGENT,
@@ -74,6 +87,11 @@ const getMultipartHeaders = (token: string) => ({
   'Cache-Control': 'no-cache',
   'Pragma': 'no-cache'
 });
+
+const getSafeImageExtension = (file: File, fallback = 'png') => {
+  const extension = file.name.split('.').pop()?.toLowerCase() || '';
+  return ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extension) ? extension : fallback;
+};
 
 const PAYOUTS_ROUTE_MISSING_GLOBAL_KEY = 'modrinth_payouts_route_missing_v2';
 
@@ -130,6 +148,125 @@ const userByIdCache = new Map<string, { ts: number; value: { user: ModrinthUser 
 
 const userProjectsInFlight = new Map<string, Promise<ModrinthProject[]>>();
 const userProjectsCache = new Map<string, { ts: number; value: ModrinthProject[] }>();
+
+const readFiniteNumber = (value: unknown) => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
+const addProjectMetric = (
+  point: ModrinthAnalyticsPoint,
+  projectId: string | undefined,
+  metric: keyof NonNullable<ModrinthAnalyticsPoint['projects']>[string],
+  value: number
+) => {
+  if (!projectId) return;
+  if (!point.projects) point.projects = {};
+  if (!point.projects[projectId]) point.projects[projectId] = {};
+  point.projects[projectId][metric] = (point.projects[projectId][metric] || 0) + value;
+};
+
+const getSliceStartTime = (start: string, end: string, slices: number, index: number) => {
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || slices <= 0) return start;
+  return new Date(startMs + ((endMs - startMs) / slices) * index).toISOString();
+};
+
+const normalizeAnalyticsResponse = (data: unknown, request: ModrinthAnalyticsRequest): ModrinthAnalyticsPoint[] => {
+  const slices = data && typeof data === 'object' && Array.isArray((data as any).metrics)
+    ? (data as any).metrics
+    : Array.isArray(data)
+      ? data
+      : null;
+
+  if (!slices) {
+    if (data && typeof data === 'object') {
+      const candidate = (data as any).data ?? (data as any).results ?? (data as any).analytics;
+      if (Array.isArray(candidate)) return candidate.filter((item): item is ModrinthAnalyticsPoint => !!item && typeof item === 'object');
+    }
+    return [];
+  }
+
+  const sliceCount = 'slices' in request.time_range.resolution ? request.time_range.resolution.slices : slices.length;
+  return slices.map((slice: unknown, index: number) => {
+    const point: ModrinthAnalyticsPoint = {
+      start_time: getSliceStartTime(request.time_range.start, request.time_range.end, sliceCount || slices.length || 1, index),
+      downloads: 0,
+      views: 0,
+      playtime: 0,
+      revenue: 0
+    };
+
+    const entries = Array.isArray(slice) ? slice : [slice];
+    entries.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const item: any = entry;
+      const projectId = typeof item.source_project === 'string' ? item.source_project : undefined;
+      const kind = item.metric_kind;
+
+      if (kind === 'downloads') {
+        const value = readFiniteNumber(item.downloads);
+        point.downloads = (point.downloads || 0) + value;
+        addProjectMetric(point, projectId, 'downloads', value);
+      } else if (kind === 'views') {
+        const value = readFiniteNumber(item.views);
+        point.views = (point.views || 0) + value;
+        addProjectMetric(point, projectId, 'views', value);
+      } else if (kind === 'playtime') {
+        const value = readFiniteNumber(item.seconds);
+        point.playtime = (point.playtime || 0) + value;
+        addProjectMetric(point, projectId, 'playtime', value);
+      } else if (kind === 'revenue') {
+        const value = readFiniteNumber(item.revenue);
+        point.revenue = (point.revenue || 0) + value;
+        addProjectMetric(point, projectId, 'revenue', value);
+      }
+    });
+
+    return point;
+  });
+};
+
+export const fetchAnalyticsV3WithStatus = async (
+  token: string,
+  request: ModrinthAnalyticsRequest
+): Promise<{ data: ModrinthAnalyticsPoint[]; status: number }> => {
+  try {
+    const response = await fetch(`${BASE_URL_V3}/analytics`, {
+      method: 'POST',
+      headers: getHeaders(token),
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      if (isDebugEnabled()) {
+        const text = await response.clone().text().catch(() => '');
+        debugGroup('POST /v3/analytics (non-OK)', () => {
+          debugLog('status', response.status);
+          debugLog('body', text.slice(0, 400));
+          debugLog('request', request);
+        });
+      }
+      return { data: [], status: response.status };
+    }
+
+    const data = await response.json();
+    const normalized = normalizeAnalyticsResponse(data, request);
+    debugGroup('POST /v3/analytics', () => {
+      debugLog('status', response.status);
+      debugLog('points', normalized.length);
+      debugLog('request', request);
+    });
+    return { data: normalized, status: response.status };
+  } catch {
+    return { data: [], status: 0 };
+  }
+};
 
 export const fetchPayoutBalanceV3WithStatus = async (
   token: string
@@ -211,7 +348,7 @@ export const fetchPayoutBalanceV3WithStatus = async (
 };
 
 export const fetchCurrentUser = async (token: string): Promise<ModrinthUser> => {
-  const cacheKey = normalizeAuthorization(token) || 'anonymous';
+  const cacheKey = getTokenCacheKey(token);
   const cached = currentUserCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < CORE_FETCH_TTL_MS) return cached.value;
 
@@ -284,7 +421,7 @@ export const fetchUserByIdWithStatus = async (
   userId: string,
   token: string
 ): Promise<{ user: ModrinthUser | null; status: number }> => {
-  const cacheKey = `${userId}::${normalizeAuthorization(token) || 'anonymous'}`;
+  const cacheKey = `${userId}::${getTokenCacheKey(token)}`;
   const cached = userByIdCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < CORE_FETCH_TTL_MS) return cached.value;
 
@@ -320,7 +457,7 @@ export const fetchUserByIdWithStatus = async (
 };
 
 export const fetchUserProjects = async (userId: string, token: string): Promise<ModrinthProject[]> => {
-  const cacheKey = `${userId}::${normalizeAuthorization(token) || 'anonymous'}`;
+  const cacheKey = `${userId}::${getTokenCacheKey(token)}`;
   const cached = userProjectsCache.get(cacheKey);
   if (cached && Date.now() - cached.ts < CORE_FETCH_TTL_MS) return cached.value;
 
@@ -595,14 +732,10 @@ export const updateProject = async (projectId: string, data: Partial<ModrinthPro
 // --- Icon & Gallery Management ---
 
 export const changeProjectIcon = async (projectId: string, file: File, token: string) => {
-    const ext = file.name.split('.').pop();
+    const ext = getSafeImageExtension(file);
     const response = await fetch(`${BASE_URL}/project/${projectId}/icon?ext=${ext}`, {
         method: 'PATCH',
-        headers: {
-            'Authorization': token,
-            'User-Agent': USER_AGENT,
-            // Fetch automatically sets Content-Type for binary/blob if we don't set it to json
-        },
+        headers: getFormHeaders(token),
         body: file
     });
     if (!response.ok) {
@@ -631,19 +764,16 @@ export const deleteProject = async (projectId: string, token: string) => {
 };
 
 export const addGalleryImage = async (projectId: string, file: File, featured: boolean, title: string, desc: string, token: string) => {
-    const ext = file.name.split('.').pop();
+    const ext = getSafeImageExtension(file);
     const url = new URL(`${BASE_URL}/project/${projectId}/gallery`);
-    url.searchParams.append('ext', ext || 'png');
+    url.searchParams.append('ext', ext);
     url.searchParams.append('featured', String(featured));
     if (title) url.searchParams.append('title', title);
     if (desc) url.searchParams.append('description', desc);
 
     const response = await fetch(url.toString(), {
         method: 'POST',
-        headers: {
-            'Authorization': token,
-            'User-Agent': USER_AGENT
-        },
+        headers: getFormHeaders(token),
         body: file
     });
     

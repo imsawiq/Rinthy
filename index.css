@@ -9,8 +9,12 @@
 
 html,
 body {
-  scrollbar-color: rgba(0, 0, 0, 0) transparent;
-  scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
   background: var(--bg);
 }
 
@@ -19,7 +23,10 @@ body {
 }
 
 #root {
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  overflow-x: clip;
   background: var(--bg);
 }
 
@@ -637,8 +644,8 @@ button:disabled {
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0;
+  height: 0;
 }
 
 *::-webkit-scrollbar-track {

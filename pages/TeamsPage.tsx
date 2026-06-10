@@ -801,7 +801,7 @@ const TeamCardBase: React.FC<TeamCardProps> = ({ currentUserId, index, memberEdi
           <a
             href={`https://modrinth.com/organization/${team.organization.slug}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             onClick={(event) => event.stopPropagation()}
             className="app-command flex h-9 w-9 shrink-0 items-center justify-center"
             aria-label={t('open_organization')}

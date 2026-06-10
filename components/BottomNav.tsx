@@ -19,9 +19,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t, theme 
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none">
+    <div className="fixed inset-x-0 bottom-0 z-[100] w-full max-w-full pointer-events-none overflow-hidden">
       <div
-        className="mx-auto max-w-md px-4"
+        className="mx-auto w-full max-w-md px-4"
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
         <div className="pointer-events-auto">

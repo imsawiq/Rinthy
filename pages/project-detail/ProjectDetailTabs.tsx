@@ -178,14 +178,14 @@ export const OverviewTab: React.FC<{
       <div className="space-y-2 pt-1">
         <h3 className="px-1 text-xs font-extrabold uppercase tracking-[0.1em] text-modrinth-muted">{t('resources')}</h3>
         {project.source_url && (
-          <a href={project.source_url} target="_blank" className="app-panel flex min-w-0 items-center gap-3 rounded-lg p-4 text-modrinth-text active:scale-[0.99]">
+          <a href={project.source_url} target="_blank" rel="noopener noreferrer" className="app-panel flex min-w-0 items-center gap-3 rounded-lg p-4 text-modrinth-text active:scale-[0.99]">
             <Globe size={18} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t('source')}</span>
             <ExternalLink size={14} className="shrink-0 opacity-40" />
           </a>
         )}
         {project.issues_url && (
-          <a href={project.issues_url} target="_blank" className="app-panel flex min-w-0 items-center gap-3 rounded-lg p-4 text-modrinth-text active:scale-[0.99]">
+          <a href={project.issues_url} target="_blank" rel="noopener noreferrer" className="app-panel flex min-w-0 items-center gap-3 rounded-lg p-4 text-modrinth-text active:scale-[0.99]">
             <Info size={18} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate text-sm font-semibold">{t('issues')}</span>
             <ExternalLink size={14} className="shrink-0 opacity-40" />

@@ -32,6 +32,39 @@ export interface ModrinthPayoutHistory {
   payouts: ModrinthPayoutTransaction[]; // full transaction history
 }
 
+export type ModrinthAnalyticsMetric = 'downloads' | 'views' | 'playtime' | 'revenue';
+export type ModrinthAnalyticsResolution = 'hour' | 'day' | 'month';
+
+export interface ModrinthAnalyticsPoint {
+  start_time?: string;
+  startTime?: string;
+  downloads?: number;
+  views?: number;
+  playtime?: number;
+  revenue?: number;
+  projects?: Record<string, {
+    downloads?: number;
+    views?: number;
+    playtime?: number;
+    revenue?: number;
+  }>;
+}
+
+export interface ModrinthAnalyticsRequest {
+  time_range: {
+    start: string;
+    end: string;
+    resolution: { slices: number } | { minutes: number };
+  };
+  return_metrics: {
+    project_views?: { bucket_by?: string[]; filter_by?: Record<string, unknown> };
+    project_downloads?: { bucket_by?: string[]; filter_by?: Record<string, unknown> };
+    project_playtime?: { bucket_by?: string[]; filter_by?: Record<string, unknown> };
+    project_revenue?: { bucket_by?: string[]; filter_by?: Record<string, unknown> };
+  };
+  project_ids?: string[];
+}
+
 export interface ModrinthPayout {
   id: string;
   amount: number;

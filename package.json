@@ -1,11 +1,12 @@
 {
   "name": "rinthy",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "GPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "app": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/open-app-window.ps1",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "check:cla": "node scripts/check-cla.mjs",
@@ -28,7 +29,6 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.0.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",

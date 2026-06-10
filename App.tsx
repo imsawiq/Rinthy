@@ -3,20 +3,20 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 declare const __APP_VERSION__: string;
 import { HashRouter, Routes, Route, useNavigate, useParams, Outlet, useLocation } from 'react-router-dom';
 import { App as CapApp } from '@capacitor/app';
-import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, Archive, Lock, EyeOff, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, Calendar, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical, Star, Plus, Sparkles } from 'lucide-react';
-import { fetchCurrentUser, fetchUserProjects, fetchProject, fetchOrganization, fetchOrganizationProjects, fetchUserOrganizations, createProject, updateProject, fetchProjectMembers, deleteTeamMember, updateTeamMember, searchUser, addTeamMember, modifyUser, fetchNotifications, markNotificationRead, markMultipleNotificationsRead, runNotificationAction, changeProjectIcon, deleteProjectIcon, deleteProject, addGalleryImage, deleteGalleryImage, fetchProjectDependencies, fetchProjectVersions, fetchGameVersionTags, fetchLoaderTags, modifyVersion, deleteVersionById, fetchUserPayoutHistoryWithStatus, fetchUserByIdWithStatus, fetchPayoutBalanceV3WithStatus, joinTeam, transferTeamOwnership, changeUserAvatar, deleteUserAvatar } from './services/modrinthService';
-import { AuthState, ModrinthUser, ModrinthProject, ModrinthOrganization, NavTab, ProjectMember, ThemeMode, Language, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthPayoutHistory } from './types';
+import { Loader2, LogOut, ArrowLeft, Save, ExternalLink, BarChart2, ShieldCheck, Key, ChevronRight, Download, Activity, BookOpen, FileText, Monitor, Server, Edit3, Globe, Wallet, DollarSign, Archive, Lock, EyeOff, Eye, Info, Heart, Clock, Users, Trash2, Moon, Sun, Smartphone, UserPlus, Search, X, Check, ChevronDown, Bell, AlertTriangle, Image as ImageIcon, Upload, Package, File as FileIcon, Layers, MousePointerClick, CheckCheck, RefreshCw, MoreVertical, Star, Plus, Sparkles, Timer, TrendingUp, LineChart } from 'lucide-react';
+import { fetchCurrentUser, fetchUserProjects, fetchProject, fetchOrganization, fetchOrganizationProjects, fetchUserOrganizations, createProject, updateProject, fetchProjectMembers, deleteTeamMember, updateTeamMember, searchUser, addTeamMember, modifyUser, fetchNotifications, markNotificationRead, markMultipleNotificationsRead, runNotificationAction, changeProjectIcon, deleteProjectIcon, deleteProject, addGalleryImage, deleteGalleryImage, fetchProjectDependencies, fetchProjectVersions, fetchGameVersionTags, fetchLoaderTags, modifyVersion, deleteVersionById, fetchUserPayoutHistoryWithStatus, fetchUserByIdWithStatus, fetchPayoutBalanceV3WithStatus, fetchAnalyticsV3WithStatus, joinTeam, transferTeamOwnership, changeUserAvatar, deleteUserAvatar } from './services/modrinthService';
+import { AuthState, ModrinthUser, ModrinthProject, ModrinthOrganization, NavTab, ProjectMember, ThemeMode, Language, UserSearchResult, ModifyUserPayload, ModrinthNotification, ProjectDependency, ModrinthVersion, ModrinthPayoutHistory, ModrinthAnalyticsMetric, ModrinthAnalyticsPoint } from './types';
 import ProjectCard from './components/ProjectCard';
 import BottomNav from './components/BottomNav';
 import { LoginScreen, Onboarding, TokenHelpModal, WelcomeSetup } from './components/AuthScreens';
-import ProjectDetail from './pages/ProjectDetail';
 import TeamsPage, { CreateProjectSheet } from './pages/TeamsPage';
 import { DEFAULT_LANGUAGE, isSupportedLanguage } from './locales';
 import { LanguageSelect, SettingsProvider, useSettings } from './contexts/SettingsContext';
-import { calculateWeeklySummary, createAnalyticsSnapshot, readAnalyticsSnapshots, saveAnalyticsSnapshot, type AnalyticsSnapshot } from './utils/analyticsSnapshots';
+import { calculateWeeklySummary, createAnalyticsSnapshot, readAnalyticsSnapshots, saveAnalyticsSnapshot } from './utils/analyticsSnapshots';
 import { formatProjectsCountLabel, getStoredProjectSortMode, PROJECT_SORT_OPTIONS, ProjectSortMode, readFavoriteProjectIds, saveFavoriteProjectIds, saveProjectSortMode, sortProjectsByMode } from './utils/projectPrefs';
 import { showToast } from './utils/toast';
 const MarkdownRenderer = React.lazy(() => import('./components/MarkdownRenderer'));
+const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'));
 
 // --- Back Button Handler for Android ---
 const BackButtonHandler: React.FC = () => {
@@ -69,6 +69,39 @@ interface GitHubRelease {
 const MODRINTH_OAUTH_BASE_URL = 'https://rinthy-auth.vercel.app';
 const MODRINTH_OAUTH_STATE_KEY = 'modrinth_oauth_state';
 const DISCORD_INVITE_URL = 'https://discord.gg/frd5Cw7xPj';
+
+const getOAuthStorage = () => {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return window.localStorage;
+  }
+};
+
+const readOAuthState = () => {
+  try {
+    return getOAuthStorage().getItem(MODRINTH_OAUTH_STATE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const writeOAuthState = (state: string) => {
+  try {
+    getOAuthStorage().setItem(MODRINTH_OAUTH_STATE_KEY, state);
+  } catch {
+    localStorage.setItem(MODRINTH_OAUTH_STATE_KEY, state);
+  }
+};
+
+const clearOAuthState = () => {
+  try {
+    sessionStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+  } catch {}
+  try {
+    localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+  } catch {}
+};
 
 const generateOAuthState = () => {
   try {
@@ -185,6 +218,7 @@ type NotificationGroup = {
 };
 
 const MODRINTH_ID_RE = /\b[A-Za-z0-9]{8}\b/g;
+const isLikelyRawModrinthId = (value: string) => /[A-Z0-9]/.test(value);
 
 const replaceResolvedIds = (value: string, replacements: Record<string, string>) =>
   value.replace(MODRINTH_ID_RE, (match) => replacements[match] || match);
@@ -213,7 +247,9 @@ const getNotificationEntityRefs = (notif: ModrinthNotification): NotificationEnt
   const refs = new Map<string, NotificationEntityRef>();
   const raw = `${notif.title} ${notif.text} ${notif.link || ''}`;
   for (const match of raw.matchAll(MODRINTH_ID_RE)) {
-    refs.set(match[0], { id: match[0], kind: 'unknown' });
+    if (isLikelyRawModrinthId(match[0])) {
+      refs.set(match[0], { id: match[0], kind: 'unknown' });
+    }
   }
 
   const link = notif.link || '';
@@ -319,7 +355,7 @@ const UpdateModal: React.FC<{ release: GitHubRelease; onClose: () => void }> = (
           <a
             href={downloadUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="app-primary flex items-center justify-center gap-2 px-3 py-3 text-sm"
           >
             <Download size={16} /> {t('update_download')}
@@ -449,11 +485,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                     const link = notif.link || '';
                     const projectSlug = link.match(/\/project\/([^/?#]+)/)?.[1] || null;
                     const organizationSlug = link.match(/\/organizations?\/([^/?#]+)/)?.[1] || null;
-                    const projectIdFromText = (notif.title + ' ' + notif.text).match(MODRINTH_ID_RE)?.find((id) => projectCache.has(id)) || null;
-                    const organizationIdFromText = (notif.title + ' ' + notif.text).match(MODRINTH_ID_RE)?.find((id) => organizationCache.has(id)) || null;
+                    const rawIdsFromText = ((notif.title + ' ' + notif.text).match(MODRINTH_ID_RE) || []).filter(isLikelyRawModrinthId);
+                    const projectIdFromText = rawIdsFromText.find((id) => projectCache.has(id)) || null;
+                    const organizationIdFromText = rawIdsFromText.find((id) => organizationCache.has(id)) || null;
                     const project = (projectSlug && projectCache.get(projectSlug)) || (projectIdFromText && projectCache.get(projectIdFromText)) || null;
                     const organization = (organizationSlug && organizationCache.get(organizationSlug)) || (organizationIdFromText && organizationCache.get(organizationIdFromText)) || null;
-                    const versionId = link.match(/\/version\/([^/?#]+)/)?.[1] || (notif.text.match(MODRINTH_ID_RE)?.find((id) => versionReplacements[id]) ?? null);
+                    const versionId = link.match(/\/version\/([^/?#]+)/)?.[1] || (rawIdsFromText.find((id) => versionReplacements[id]) ?? null);
                     const entityKind = organization ? 'organization' : project ? 'project' : 'notification';
                     const entityTitle = organization?.name || project?.title || null;
                     const entityIconUrl = organization?.icon_url || project?.icon_url || null;
@@ -715,7 +752,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                                     <div className="mt-1 flex items-center gap-3 text-[11px] text-modrinth-muted/80">
                                                         <span>{formatNotificationRelativeTime(item.created, language)}</span>
                                                         {getModrinthLink(item.link) && (
-                                                            <a href={getModrinthLink(item.link) || undefined} target="_blank" rel="noreferrer" className="text-modrinth-green hover:underline flex items-center gap-1 truncate">
+                                                            <a href={getModrinthLink(item.link) || undefined} target="_blank" rel="noopener noreferrer" className="text-modrinth-green hover:underline flex items-center gap-1 truncate">
                                                                 View <ExternalLink size={10}/>
                                                             </a>
                                                         )}
@@ -955,7 +992,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
            <a
              href={DISCORD_INVITE_URL}
              target="_blank"
-             rel="noreferrer"
+             rel="noopener noreferrer"
              className="p-2 text-modrinth-muted hover:text-modrinth-green transition-colors"
              aria-label="Open Discord server"
            >
@@ -1322,11 +1359,129 @@ const ProfileEditModal: React.FC<{ isOpen: boolean; onClose: () => void; user: M
   );
 };
 
+type AnalyticsProjectInsight = {
+  project: ModrinthProject;
+  downloads: number;
+  views: number;
+  playtime: number;
+  revenue: number;
+};
+
+type AnalyticsMover = {
+  id: string;
+  title: string;
+  icon_url?: string;
+  downloads: number;
+  followers: number;
+};
+
+type AnalyticsSeriesMetric = Extract<ModrinthAnalyticsMetric, 'downloads' | 'views' | 'playtime' | 'revenue'>;
+
+const ANALYTICS_SERIES_METRICS: AnalyticsSeriesMetric[] = ['downloads', 'views', 'playtime', 'revenue'];
+
+const getAnalyticsPointTime = (point: ModrinthAnalyticsPoint) => point.start_time || point.startTime || '';
+
+const getAnalyticsMetricValue = (point: ModrinthAnalyticsPoint, metric: AnalyticsSeriesMetric) => {
+  const value = point[metric];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+};
+
+const sumAnalyticsMetric = (points: ModrinthAnalyticsPoint[], metric: AnalyticsSeriesMetric) =>
+  points.reduce((sum, point) => sum + getAnalyticsMetricValue(point, metric), 0);
+
+const sumProjectAnalyticsMetric = (points: ModrinthAnalyticsPoint[], projectId: string, metric: AnalyticsSeriesMetric) =>
+  points.reduce((sum, point) => {
+    const value = point.projects?.[projectId]?.[metric];
+    return sum + (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+  }, 0);
+
+const hasAnalyticsMetric = (points: ModrinthAnalyticsPoint[], metric: AnalyticsSeriesMetric) =>
+  points.some((point) => getAnalyticsMetricValue(point, metric) > 0 || point[metric] !== undefined);
+
+const formatCompactNumber = (value: number) =>
+  new Intl.NumberFormat(undefined, { notation: Math.abs(value) >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(value);
+
+const formatPlaytime = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0) return '0m';
+  if (value < 3600) return `${Math.round(value / 60).toLocaleString()}m`;
+  const hours = value / 3600;
+  if (hours >= 1000) return `${formatCompactNumber(hours)}h`;
+  if (hours >= 10) return `${Math.round(hours).toLocaleString()}h`;
+  return `${hours.toFixed(1)}h`;
+};
+
+const formatAnalyticsMetricValue = (metric: AnalyticsSeriesMetric, value: number) => {
+  if (metric === 'revenue') return `$${value.toFixed(2)}`;
+  if (metric === 'playtime') return formatPlaytime(value);
+  return Math.round(value).toLocaleString();
+};
+
+const APP_DATE_LOCALES: Record<Language, string> = {
+  en: 'en-US',
+  ru: 'ru-RU',
+  de: 'de-DE',
+  it: 'it-IT',
+  fr: 'fr-FR',
+  pl: 'pl-PL'
+};
+
+const formatAnalyticsDate = (value: string, language: Language) => {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return value.slice(0, 10);
+  return date.toLocaleDateString(APP_DATE_LOCALES[language] || APP_DATE_LOCALES.en, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: AnalyticsSeriesMetric; height?: number }> = ({ points, metric, height = 92 }) => {
+  const values = points.map((point) => getAnalyticsMetricValue(point, metric));
+  const max = Math.max(...values, 1);
+  const width = 320;
+  const padding = 10;
+  const plotWidth = width - padding * 2;
+  const plotHeight = height - padding * 2;
+  const linePoints = values.length > 0
+    ? values.map((value, index) => {
+        const x = padding + (values.length === 1 ? plotWidth : (index / (values.length - 1)) * plotWidth);
+        const y = padding + plotHeight - (value / max) * plotHeight;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      }).join(' ')
+    : `${padding},${height - padding} ${width - padding},${height - padding}`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-24 w-full overflow-visible" role="img" aria-label={`${metric} trend`}>
+      <defs>
+        <linearGradient id={`analytics-gradient-${metric}`} x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--accent-color, #38C172)" stopOpacity="1" />
+        </linearGradient>
+      </defs>
+      {[0.25, 0.5, 0.75].map((ratio) => (
+        <line key={ratio} x1={padding} x2={width - padding} y1={padding + plotHeight * ratio} y2={padding + plotHeight * ratio} className="stroke-modrinth-border/70" strokeWidth="1" strokeDasharray="4 8" />
+      ))}
+      <polyline points={linePoints} fill="none" stroke={`url(#analytics-gradient-${metric})`} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      {values.map((value, index) => {
+        if (values.length > 18 && index % Math.ceil(values.length / 9) !== 0 && index !== values.length - 1) return null;
+        const x = padding + (values.length === 1 ? plotWidth : (index / Math.max(1, values.length - 1)) * plotWidth);
+        const y = padding + plotHeight - (value / max) * plotHeight;
+        return <circle key={index} cx={x} cy={y} r="3" className="fill-modrinth-green stroke-modrinth-card" strokeWidth="2" />;
+      })}
+    </svg>
+  );
+};
+
 const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, token }) => {
   const [projects, setProjects] = useState<ModrinthProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState<'downloads' | 'followers'>('downloads');
+  const [seriesMetric, setSeriesMetric] = useState<AnalyticsSeriesMetric>('downloads');
+  const [projectInsightMetric, setProjectInsightMetric] = useState<AnalyticsSeriesMetric>('downloads');
   const [analyticsRangeDays, setAnalyticsRangeDays] = useState<7 | 30 | 90>(7);
+  const [analyticsV3Points, setAnalyticsV3Points] = useState<ModrinthAnalyticsPoint[]>([]);
+  const [analyticsV3RevenuePoints, setAnalyticsV3RevenuePoints] = useState<ModrinthAnalyticsPoint[]>([]);
+  const [analyticsV3Status, setAnalyticsV3Status] = useState<number | null>(null);
+  const [analyticsV3RevenueStatus, setAnalyticsV3RevenueStatus] = useState<number | null>(null);
+  const [analyticsV3Loading, setAnalyticsV3Loading] = useState(false);
+  const [projectInsights, setProjectInsights] = useState<AnalyticsProjectInsight[]>([]);
+  const [weeklyClock, setWeeklyClock] = useState(() => Date.now());
   const [profileUser, setProfileUser] = useState<ModrinthUser>(user);
   const [profileStatus, setProfileStatus] = useState<number | null>(null);
   const [payoutHistory, setPayoutHistory] = useState<ModrinthPayoutHistory | null>(null);
@@ -1334,7 +1489,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
   const [payoutLoading, setPayoutLoading] = useState(true);
   const [payoutBalanceV3, setPayoutBalanceV3] = useState<any | null>(null);
   const [payoutBalanceV3Status, setPayoutBalanceV3Status] = useState<number | null>(null);
-  const { t, theme } = useSettings();
+  const { t, theme, language } = useSettings();
 
   const isDebugEnabled = useMemo(() => {
     try {
@@ -1381,6 +1536,72 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
   useEffect(() => {
     loadAnalytics();
   }, [loadAnalytics]);
+
+  const analyticsTimeRange = useMemo(() => {
+    const end = new Date(weeklyClock);
+    const start = new Date(weeklyClock - analyticsRangeDays * 24 * 60 * 60 * 1000);
+    return {
+      start: start.toISOString(),
+      end: end.toISOString(),
+      resolution: { slices: analyticsRangeDays }
+    };
+  }, [analyticsRangeDays, weeklyClock]);
+
+  useEffect(() => {
+    if (loading || projects.length === 0) {
+      setAnalyticsV3Points([]);
+      setAnalyticsV3RevenuePoints([]);
+      setProjectInsights([]);
+      return;
+    }
+
+    let mounted = true;
+    const projectIds = projects.map((project) => project.id);
+
+    setAnalyticsV3Loading(true);
+    (async () => {
+      const [core, revenue] = await Promise.all([
+        fetchAnalyticsV3WithStatus(token, {
+          time_range: analyticsTimeRange,
+          return_metrics: {
+            project_downloads: { bucket_by: ['project_id'] },
+            project_views: { bucket_by: ['project_id'] },
+            project_playtime: { bucket_by: ['project_id'] }
+          },
+          project_ids: projectIds
+        }),
+        fetchAnalyticsV3WithStatus(token, {
+          time_range: analyticsTimeRange,
+          return_metrics: {
+            project_revenue: { bucket_by: ['project_id'] }
+          },
+          project_ids: projectIds
+        })
+      ]);
+
+      const perProject = projects.map((project) => ({
+        project,
+        downloads: sumProjectAnalyticsMetric(core.data, project.id, 'downloads'),
+        views: sumProjectAnalyticsMetric(core.data, project.id, 'views'),
+        playtime: sumProjectAnalyticsMetric(core.data, project.id, 'playtime'),
+        revenue: sumProjectAnalyticsMetric(revenue.data, project.id, 'revenue')
+      }));
+
+      if (!mounted) return;
+      setAnalyticsV3Points(core.data);
+      setAnalyticsV3RevenuePoints(revenue.data);
+      setAnalyticsV3Status(core.status);
+      setAnalyticsV3RevenueStatus(revenue.status);
+      setProjectInsights(perProject);
+    })().finally(() => {
+      if (!mounted) return;
+      setAnalyticsV3Loading(false);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [analyticsTimeRange, loading, projects, token]);
 
   useEffect(() => {
     let mounted = true;
@@ -1589,32 +1810,57 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
       : null;
 
   const weeklySnapshotStorageKey = useMemo(() => `rinthy_analytics_snapshots_${user.id}`, [user.id]);
-  const analyticsRangeResetStorageKey = useMemo(() => `${weeklySnapshotStorageKey}_range_resets`, [weeklySnapshotStorageKey]);
-  const [weeklyResetTick, setWeeklyResetTick] = useState(0);
-  const [weeklyClock, setWeeklyClock] = useState(() => Date.now());
-
-  const rangeResetBaseline = useMemo(() => {
-    try {
-      const raw = localStorage.getItem(analyticsRangeResetStorageKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as Record<string, AnalyticsSnapshot>;
-      const snapshot = parsed[String(analyticsRangeDays)];
-      if (!snapshot || typeof snapshot.capturedAt !== 'number' || !snapshot.projects || typeof snapshot.projects !== 'object') return null;
-      return snapshot;
-    } catch {
-      return null;
-    }
-  }, [analyticsRangeDays, analyticsRangeResetStorageKey, weeklyResetTick]);
 
   const weeklySummary = useMemo(
-    () => calculateWeeklySummary(projects, readAnalyticsSnapshots(weeklySnapshotStorageKey), weeklyRevenueLifetime, weeklyClock, analyticsRangeDays, rangeResetBaseline),
-    [projects, weeklySnapshotStorageKey, weeklyClock, weeklyResetTick, weeklyRevenueLifetime, analyticsRangeDays, rangeResetBaseline]
+    () => calculateWeeklySummary(projects, readAnalyticsSnapshots(weeklySnapshotStorageKey), weeklyRevenueLifetime, weeklyClock, analyticsRangeDays),
+    [projects, weeklySnapshotStorageKey, weeklyClock, weeklyRevenueLifetime, analyticsRangeDays]
   );
 
-  const topMovers = useMemo(
-    () => weeklySummary.projectDeltas.filter((project) => project.downloads > 0 || project.followers > 0).slice(0, 5),
-    [weeklySummary.projectDeltas]
+  const analyticsV3Available = analyticsV3Status === 200;
+  const analyticsV3RevenueAvailable = analyticsV3RevenueStatus === 200;
+  const trendPoints = seriesMetric === 'revenue' ? analyticsV3RevenuePoints : analyticsV3Points;
+  const rangeDownloads = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'downloads') : weeklySummary.downloads;
+  const rangeViews = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'views') : 0;
+  const rangePlaytime = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'playtime') : 0;
+  const rangeRevenue = analyticsV3RevenueAvailable ? sumAnalyticsMetric(analyticsV3RevenuePoints, 'revenue') : weeklySummary.revenue;
+  const hasServerProjectInsights = analyticsV3Available && projectInsights.some((item) => item.downloads > 0 || item.views > 0 || item.playtime > 0 || item.revenue > 0);
+  const sortedProjectInsights = useMemo(
+    () => [...projectInsights].sort((a, b) => b[projectInsightMetric] - a[projectInsightMetric]),
+    [projectInsightMetric, projectInsights]
   );
+  const topDownloadProjectInsight = useMemo(
+    () => analyticsV3Available
+      ? [...projectInsights].sort((a, b) => b.downloads - a.downloads).find((project) => project.downloads > 0) || null
+      : null,
+    [analyticsV3Available, projectInsights]
+  );
+  const activeProjectsInRange = hasServerProjectInsights
+    ? projectInsights.filter((project) => project.downloads > 0 || project.views > 0 || project.playtime > 0 || project.revenue > 0).length
+    : weeklySummary.activeProjects;
+  const analyticsSourceLabel = analyticsV3Available ? t('analytics_source_modrinth') : t('analytics_source_local');
+  const analyticsRangeLabel = `${formatAnalyticsDate(analyticsTimeRange.start, language)} - ${formatAnalyticsDate(analyticsTimeRange.end, language)}`;
+
+  const topMovers = useMemo<AnalyticsMover[]>(() => {
+    const serverMovers = analyticsV3Available
+      ? projectInsights
+          .filter((item) => item.downloads > 0)
+          .sort((a, b) => b.downloads - a.downloads)
+          .slice(0, 5)
+          .map((item) => ({
+            id: item.project.id,
+            title: item.project.title,
+            icon_url: item.project.icon_url,
+            downloads: item.downloads,
+            followers: weeklySummary.projectDeltas.find((project) => project.id === item.project.id)?.followers ?? 0
+          }))
+      : [];
+
+    if (serverMovers.length > 0) return serverMovers;
+
+    return weeklySummary.projectDeltas
+      .filter((project) => project.downloads > 0 || project.followers > 0)
+      .slice(0, 5);
+  }, [analyticsV3Available, projectInsights, weeklySummary.projectDeltas]);
 
   const projectHealth = useMemo(() => {
     const now = weeklyClock;
@@ -1714,24 +1960,6 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
     };
   }, [loadAnalytics]);
 
-  const resetWeeklySummary = useCallback(() => {
-    const now = Date.now();
-    const snapshot = createAnalyticsSnapshot(projects, now, weeklyRevenueLifetime);
-
-    try {
-      const raw = localStorage.getItem(analyticsRangeResetStorageKey);
-      const parsed = raw ? JSON.parse(raw) : {};
-      const next = parsed && typeof parsed === 'object' ? parsed : {};
-      next[String(analyticsRangeDays)] = snapshot;
-      localStorage.setItem(analyticsRangeResetStorageKey, JSON.stringify(next));
-    } catch {
-      // Ignore storage errors; the next analytics load will keep using the regular range baseline.
-    }
-
-    setWeeklyResetTick((value) => value + 1);
-    setWeeklyClock(now);
-  }, [analyticsRangeDays, analyticsRangeResetStorageKey, projects, weeklyRevenueLifetime]);
-
   if (loading) return <div className="flex justify-center pt-40 animate-fade-in"><Loader2 className="animate-spin text-modrinth-green" /></div>;
 
   return (
@@ -1810,7 +2038,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 ? t('token_no_payouts_access')
                 : (!payoutDataVisible ? t('payout_data_unavailable') : t('create_wallet_msg'))}
             </p>
-            <a href="https://modrinth.com/settings/payouts" target="_blank" rel="noreferrer" className="text-xs font-bold text-modrinth-text bg-modrinth-card border border-modrinth-border px-3 py-1.5 rounded-lg inline-flex items-center gap-1">
+            <a href="https://modrinth.com/settings/payouts" target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-modrinth-text bg-modrinth-card border border-modrinth-border px-3 py-1.5 rounded-lg inline-flex items-center gap-1">
               {t('open_payout_settings')} <ExternalLink size={14} />
             </a>
           </div>
@@ -1853,7 +2081,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
         <a
           href="https://modrinth.com/dashboard/revenue"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-xs font-bold text-modrinth-text bg-modrinth-card border border-modrinth-border px-3 py-1.5 rounded-lg inline-flex items-center gap-1"
         >
           {t('open_revenue_page')} <ExternalLink size={14} />
@@ -1897,39 +2125,51 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
 
       <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.12s' }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('range_summary')}</h3>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
-              {[7, 30, 90].map((days) => (
-                <button
-                  key={days}
-                  onClick={() => setAnalyticsRangeDays(days as 7 | 30 | 90)}
-                  className={`min-w-10 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 active:scale-95 ${
-                    analyticsRangeDays === days
-                      ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_rgba(56,193,114,0.18)]'
-                      : 'text-modrinth-muted hover:text-modrinth-text'
-                  }`}
-                >
-                  {days}d
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={resetWeeklySummary}
-              className="px-2.5 py-1 rounded-lg bg-modrinth-card border border-modrinth-border text-[10px] font-bold uppercase text-modrinth-muted hover:text-modrinth-text hover:border-modrinth-green/40 active:scale-95 transition-all"
-            >
-              {t('reset')}
-            </button>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('range_summary')}</h3>
+            <div className="mt-1 truncate text-[11px] font-semibold text-modrinth-muted">{analyticsRangeLabel}</div>
+          </div>
+          <div className="flex rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+            {[7, 30, 90].map((days) => (
+              <button
+                key={days}
+                onClick={() => setAnalyticsRangeDays(days as 7 | 30 | 90)}
+                className={`min-w-10 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 active:scale-95 ${
+                  analyticsRangeDays === days
+                    ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_rgba(56,193,114,0.18)]'
+                    : 'text-modrinth-muted hover:text-modrinth-text'
+                }`}
+              >
+                {days}d
+              </button>
+            ))}
           </div>
         </div>
         <div className="app-panel p-5 relative overflow-hidden">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-extrabold text-modrinth-muted">
+              {analyticsV3Loading ? <Loader2 size={14} className="animate-spin text-modrinth-green" /> : <LineChart size={14} className="text-modrinth-green" />}
+              <span>{analyticsSourceLabel}</span>
+            </div>
+            {!analyticsV3Available && analyticsV3Status !== null && (
+              <span className="rounded-md bg-yellow-500/10 px-2 py-1 text-[10px] font-bold text-yellow-400">{t('analytics_limited')}</span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3 relative">
             <div className="app-panel-soft p-4">
               <div className="flex items-center justify-between mb-2">
                 <Download size={18} className="text-modrinth-green" />
                 <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('downloads_label')}</span>
               </div>
-              <div className="text-2xl font-bold text-modrinth-text">+{weeklySummary.downloads.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-modrinth-text">+{Math.round(rangeDownloads).toLocaleString()}</div>
+              <div className="text-xs text-modrinth-muted">{analyticsRangeDays}d</div>
+            </div>
+            <div className="app-panel-soft p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Eye size={18} className="text-modrinth-green" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('views_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">{analyticsV3Available ? `+${Math.round(rangeViews).toLocaleString()}` : '--'}</div>
               <div className="text-xs text-modrinth-muted">{analyticsRangeDays}d</div>
             </div>
             <div className="app-panel-soft p-4">
@@ -1946,8 +2186,16 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('payouts')}</span>
               </div>
               <div className="text-2xl font-bold text-modrinth-text">
-                {weeklySummary.revenue === null ? '--' : `+$${weeklySummary.revenue.toFixed(2)}`}
+                {rangeRevenue === null ? '--' : `+$${rangeRevenue.toFixed(2)}`}
               </div>
+              <div className="text-xs text-modrinth-muted">{analyticsRangeDays}d</div>
+            </div>
+            <div className="app-panel-soft p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Timer size={18} className="text-modrinth-green" />
+                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('playtime_label')}</span>
+              </div>
+              <div className="text-2xl font-bold text-modrinth-text">{analyticsV3Available ? formatPlaytime(rangePlaytime) : '--'}</div>
               <div className="text-xs text-modrinth-muted">{analyticsRangeDays}d</div>
             </div>
             <div className="app-panel-soft p-4">
@@ -1955,39 +2203,156 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 <Activity size={18} className="text-modrinth-green" />
                 <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('active_label')}</span>
               </div>
-              <div className="text-2xl font-bold text-modrinth-text">{weeklySummary.activeProjects.toLocaleString()}</div>
-              <div className="text-xs text-modrinth-muted">{t('active_projects_week')}</div>
-            </div>
-            <div className="app-panel-soft p-4 min-w-0">
-              <div className="flex items-center justify-between mb-2">
-                <Calendar size={18} className="text-modrinth-green" />
-                <span className="text-[10px] uppercase text-modrinth-muted font-bold">{t('tracked_label')}</span>
-              </div>
-              <div className="text-2xl font-bold text-modrinth-text">{weeklySummary.daysTracked}</div>
-              <div className="text-xs text-modrinth-muted">{t('days_tracked')}</div>
+              <div className="text-2xl font-bold text-modrinth-text">{activeProjectsInRange.toLocaleString()}</div>
+              <div className="text-xs text-modrinth-muted">{t('active_projects_range')}</div>
             </div>
           </div>
-          {weeklySummary.topProject && (weeklySummary.topProject.downloads > 0 || weeklySummary.topProject.followers > 0) && (
+          {((topDownloadProjectInsight && topDownloadProjectInsight.downloads > 0) || (!topDownloadProjectInsight && weeklySummary.topProject && weeklySummary.topProject.downloads > 0)) && (
             <div className="app-panel-soft mt-3 p-3 flex items-center gap-3 relative">
-              {weeklySummary.topProject.icon_url ? (
-                <img src={weeklySummary.topProject.icon_url} alt={weeklySummary.topProject.title} className="w-9 h-9 rounded-xl bg-modrinth-bg" />
+              {(topDownloadProjectInsight?.project.icon_url || weeklySummary.topProject?.icon_url) ? (
+                <img src={topDownloadProjectInsight?.project.icon_url || weeklySummary.topProject?.icon_url} alt={topDownloadProjectInsight?.project.title || weeklySummary.topProject?.title || ''} className="w-9 h-9 rounded-xl bg-modrinth-bg" />
               ) : (
                 <div className="w-9 h-9 rounded-xl bg-modrinth-bg flex items-center justify-center text-modrinth-muted">
                   <Package size={16} />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-modrinth-muted">{t('weekly_top_project')}</div>
-                <div className="text-sm font-bold text-modrinth-text truncate">{weeklySummary.topProject.title}</div>
+                <div className="text-xs text-modrinth-muted">{t('range_top_project')}</div>
+                <div className="text-sm font-bold text-modrinth-text truncate">{topDownloadProjectInsight?.project.title || weeklySummary.topProject?.title}</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-sm font-mono font-bold text-modrinth-green">+{weeklySummary.topProject.downloads.toLocaleString()}</div>
+                <div className="text-sm font-mono font-bold text-modrinth-green">
+                  +{Math.round(topDownloadProjectInsight?.downloads ?? weeklySummary.topProject?.downloads ?? 0).toLocaleString()}
+                </div>
                 <div className="text-[10px] text-modrinth-muted">{t('downloads')}</div>
               </div>
             </div>
           )}
-          {!weeklySummary.isBaselineReady && (
+          {!analyticsV3Available && !weeklySummary.isBaselineReady && (
             <p className="mt-3 text-[11px] leading-relaxed text-modrinth-muted relative">{t('weekly_baseline_note')}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.13s' }}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('analytics_trend')}</h3>
+          <div className="grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+            {ANALYTICS_SERIES_METRICS.map((item) => {
+              const label = item === 'downloads' ? t('downloads') : t(`${item}_label` as any);
+              const Icon = item === 'downloads' ? Download : item === 'views' ? Eye : item === 'playtime' ? Timer : DollarSign;
+              return (
+                <button
+                  key={item}
+                  onClick={() => setSeriesMetric(item)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
+                    seriesMetric === item
+                      ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_rgba(56,193,114,0.18)]'
+                      : 'text-modrinth-muted hover:text-modrinth-text'
+                  }`}
+                  aria-label={label}
+                  title={label}
+                >
+                  <Icon size={14} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="app-panel overflow-hidden p-4">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-modrinth-muted">
+                <TrendingUp size={14} className="text-modrinth-green" />
+                <span>{analyticsRangeDays}d</span>
+              </div>
+              <div className="mt-1 text-2xl font-black text-modrinth-text">
+                {formatAnalyticsMetricValue(seriesMetric, sumAnalyticsMetric(trendPoints, seriesMetric))}
+              </div>
+            </div>
+          </div>
+          {trendPoints.length > 0 && (seriesMetric !== 'revenue' || analyticsV3RevenueAvailable) && hasAnalyticsMetric(trendPoints, seriesMetric) ? (
+            <>
+              <AnalyticsSparkline points={trendPoints} metric={seriesMetric} />
+              <div className="mt-2 flex items-center justify-between gap-3 text-[10px] font-bold text-modrinth-muted">
+                <span>{getAnalyticsPointTime(trendPoints[0]).slice(0, 10)}</span>
+                <span>{getAnalyticsPointTime(trendPoints[trendPoints.length - 1]).slice(0, 10)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex min-h-24 items-center justify-center rounded-lg border border-dashed border-modrinth-border bg-modrinth-bg/40 px-4 text-center text-sm font-semibold text-modrinth-muted">
+              {seriesMetric === 'revenue' && !analyticsV3RevenueAvailable ? t('analytics_revenue_scope_needed') : t('analytics_no_series')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.135s' }}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('project_analytics')}</h3>
+            <div className="mt-1 truncate text-[11px] font-semibold text-modrinth-muted">{analyticsRangeLabel}</div>
+          </div>
+          <div className="grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+            {ANALYTICS_SERIES_METRICS.map((item) => {
+              const label = item === 'downloads' ? t('downloads') : t(`${item}_label` as any);
+              const Icon = item === 'downloads' ? Download : item === 'views' ? Eye : item === 'playtime' ? Timer : DollarSign;
+              return (
+                <button
+                  key={item}
+                  onClick={() => setProjectInsightMetric(item)}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
+                    projectInsightMetric === item
+                      ? 'bg-modrinth-card text-modrinth-text shadow'
+                      : 'text-modrinth-muted hover:text-modrinth-text'
+                  }`}
+                  aria-label={label}
+                  title={label}
+                >
+                  <Icon size={14} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="app-panel p-4">
+          {sortedProjectInsights.length > 0 && analyticsV3Available ? (
+            <div className="space-y-2">
+              {sortedProjectInsights.slice(0, 8).map((item, index) => {
+                const value = item[projectInsightMetric];
+                const maxProjectValue = Math.max(1, sortedProjectInsights[0]?.[projectInsightMetric] || 0);
+                return (
+                  <div key={item.project.id} className="app-panel-soft flex items-center gap-3 p-3">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-modrinth-green/15 text-xs font-extrabold text-modrinth-green">
+                      {index + 1}
+                    </div>
+                    {item.project.icon_url ? (
+                      <img src={item.project.icon_url} alt={item.project.title} className="h-10 w-10 shrink-0 rounded-xl bg-modrinth-bg object-cover" />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-modrinth-bg text-modrinth-muted">
+                        <Package size={18} />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <div className="truncate text-sm font-extrabold text-modrinth-text">{item.project.title}</div>
+                        <div className="shrink-0 text-sm font-mono font-extrabold text-modrinth-green">{formatAnalyticsMetricValue(projectInsightMetric, value)}</div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-modrinth-muted">
+                        <span>{Math.round(item.views).toLocaleString()} {t('views_label').toLowerCase()}</span>
+                        <span>{Math.round(item.downloads).toLocaleString()} {t('downloads').toLowerCase()}</span>
+                        <span>{formatPlaytime(item.playtime)} {t('playtime_label').toLowerCase()}</span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-modrinth-bg/80">
+                        <div className="h-full rounded-full app-progress-fill transition-all duration-700" style={{ width: `${Math.max(6, (value / maxProjectValue) * 100)}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="py-3 text-center text-sm text-modrinth-muted">{analyticsV3Loading ? t('loading') : t('analytics_no_project_data')}</p>
           )}
         </div>
       </div>
@@ -2176,7 +2541,7 @@ const SettingsActionButton: React.FC<{
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" className={className}>
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
         {content}
       </a>
     );
@@ -2699,7 +3064,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
               <a
                 href={findApkAsset(settingsRelease)?.browser_download_url || settingsRelease.html_url}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs font-bold text-modrinth-green bg-modrinth-bg px-3 py-1.5 rounded-lg"
               >
                 <ExternalLink size={12} /> {t('update_view_release')}
@@ -2815,6 +3180,12 @@ const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => 
   const { t, theme } = useSettings();
   const scrollResetTimer = useRef<number | null>(null);
 
+  const resetHorizontalScroll = useCallback(() => {
+    window.scrollTo({ top: window.scrollY, left: 0, behavior: 'auto' });
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+  }, []);
+
   const handleTabChange = useCallback((nextTab: NavTab) => {
     if (scrollResetTimer.current !== null) window.clearTimeout(scrollResetTimer.current);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -2833,9 +3204,20 @@ const MainLayout: React.FC<{ user: ModrinthUser; token: string; onLogout: () => 
     }, 0);
   }, [activeTab]);
 
-  useEffect(() => () => {
-    if (scrollResetTimer.current !== null) window.clearTimeout(scrollResetTimer.current);
-  }, []);
+  useEffect(() => {
+    const handleViewportChange = () => resetHorizontalScroll();
+
+    window.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      if (scrollResetTimer.current !== null) window.clearTimeout(scrollResetTimer.current);
+      window.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+    };
+  }, [resetHorizontalScroll]);
   
   return (
     <>
@@ -2949,21 +3331,21 @@ const App: React.FC = () => {
       }
 
       const { token, state, error } = payload;
-      const expectedState = localStorage.getItem(MODRINTH_OAUTH_STATE_KEY);
+      const expectedState = readOAuthState();
 
       if (error) {
-        localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+        clearOAuthState();
         setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_cancelled') }));
         return;
       }
 
       if (!state || !expectedState || state !== expectedState) {
-        localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+        clearOAuthState();
         setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_state_error') }));
         return;
       }
 
-      localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+      clearOAuthState();
 
       if (!token) {
         setAuthState(prev => ({ ...prev, isLoading: false, error: getAuthMessage('oauth_missing_token') }));
@@ -3042,14 +3424,14 @@ const App: React.FC = () => {
     }
 
     const state = generateOAuthState();
-    localStorage.setItem(MODRINTH_OAUTH_STATE_KEY, state);
+    writeOAuthState(state);
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     window.location.href = `${MODRINTH_OAUTH_BASE_URL}/api/modrinth/start?state=${encodeURIComponent(state)}`;
   };
 
   const handleLogout = () => {
     localStorage.removeItem('modrinth_token');
-    localStorage.removeItem(MODRINTH_OAUTH_STATE_KEY);
+    clearOAuthState();
     setAuthState(prev => ({ ...prev, token: null, user: null }));
   };
 
@@ -3095,7 +3477,14 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-modrinth-bg text-modrinth-text font-sans selection:bg-modrinth-green/30">
            <Routes>
               <Route path="/" element={<MainLayout user={authState.user} token={authState.token} onLogout={handleLogout} updateInfo={latestRelease} />} />
-              <Route path="/project/:id" element={<ProjectDetail token={authState.token} currentUserId={authState.user?.id} />} />
+              <Route
+                path="/project/:id"
+                element={
+                  <React.Suspense fallback={<div className="flex justify-center pt-40 animate-fade-in"><Loader2 className="animate-spin text-modrinth-green" /></div>}>
+                    <ProjectDetail token={authState.token} currentUserId={authState.user?.id} />
+                  </React.Suspense>
+                }
+              />
            </Routes>
         </div>
       </HashRouter>

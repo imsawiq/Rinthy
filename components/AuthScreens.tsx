@@ -155,7 +155,7 @@ export const TokenHelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) =
       <div className="app-responsive-sheet bg-modrinth-card p-6 max-w-md w-full border border-modrinth-border" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-modrinth-text mb-4">{t('token_help_title')}</h3>
         <ol className="list-decimal list-inside space-y-2 text-modrinth-muted text-sm mb-6">
-          <li>{t('token_help_open')} <a className="text-modrinth-green hover:underline font-bold" href="https://modrinth.com/settings/pats" target="_blank" rel="noreferrer">https://modrinth.com/settings/pats</a></li>
+          <li>{t('token_help_open')} <a className="text-modrinth-green hover:underline font-bold" href="https://modrinth.com/settings/pats" target="_blank" rel="noopener noreferrer">https://modrinth.com/settings/pats</a></li>
           <li>{t('token_help_create')}</li>
           <li>{t('token_help_scopes')}</li>
           <li>{t('token_help_paste')}</li>
