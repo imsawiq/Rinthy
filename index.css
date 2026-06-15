@@ -32,15 +32,16 @@ body {
 
 .theme-glass,
 .theme-glass body {
-  --glass-base: #020403;
-  --glass-elevated: color-mix(in srgb, var(--accent-color) 2.5%, #050605);
-  --glass-raised: color-mix(in srgb, var(--accent-color) 3.5%, #070907);
-  --glass-fill: color-mix(in srgb, var(--accent-color) 4%, rgba(4, 6, 5, 0.72));
-  --glass-fill-strong: color-mix(in srgb, var(--accent-color) 6%, rgba(7, 10, 8, 0.78));
-  --glass-fill-quiet: color-mix(in srgb, var(--accent-color) 2.5%, rgba(2, 4, 3, 0.66));
-  --glass-border: color-mix(in srgb, var(--accent-color) 18%, rgba(255, 255, 255, 0.082));
-  --glass-border-strong: color-mix(in srgb, var(--accent-color) 26%, rgba(255, 255, 255, 0.13));
-  --glass-highlight: color-mix(in srgb, var(--accent-color) 18%, rgba(255, 255, 255, 0.09));
+  --glass-base: #030303;
+  --glass-elevated: rgba(7, 7, 7, 0.82);
+  --glass-raised: rgba(11, 11, 11, 0.78);
+  --glass-fill: rgba(12, 12, 12, 0.62);
+  --glass-fill-strong: rgba(18, 18, 18, 0.72);
+  --glass-fill-quiet: rgba(5, 5, 5, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.092);
+  --glass-border-strong: rgba(255, 255, 255, 0.15);
+  --glass-highlight: rgba(255, 255, 255, 0.105);
+  --glass-accent-ring: color-mix(in srgb, var(--accent-color) 16%, rgba(255, 255, 255, 0.1));
   --glass-shadow: rgba(0, 0, 0, 0.74);
   background: var(--glass-base) !important;
 }
@@ -53,7 +54,7 @@ body {
 .theme-glass [class*='bg-modrinth-card/'][class*='backdrop-blur-xl'] {
   border-color: var(--glass-border) !important;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 5%, rgba(255, 255, 255, 0.026)), rgba(255, 255, 255, 0.004)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.034), rgba(255, 255, 255, 0.006)),
     var(--glass-elevated) !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.085) inset,
@@ -73,7 +74,7 @@ body {
 .theme-glass .app-toast {
   border-color: rgba(255, 255, 255, 0.088);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 5%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.004)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.005)),
     var(--glass-fill-quiet);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.052) inset;
   backdrop-filter: blur(20px) saturate(1.08);
@@ -177,8 +178,8 @@ body {
   gap: 0 !important;
   padding: 0.16rem !important;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 8%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.003)),
-    color-mix(in srgb, var(--accent-color) 3%, #020302) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.006)),
+    rgba(0, 0, 0, 0.58) !important;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 10px 24px rgba(0, 0, 0, 0.28);
@@ -205,18 +206,18 @@ body {
 }
 
 .theme-glass .app-segmented-tab[data-active='true'] {
-  color: var(--accent-color) !important;
+  color: var(--text) !important;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 34%, rgba(255, 255, 255, 0.07)),
+    inset 0 0 0 1px var(--glass-accent-ring),
     0 8px 22px rgba(0, 0, 0, 0.22) !important;
 }
 
 .theme-glass .app-segmented-tab:not([data-active='true']) {
-  color: color-mix(in srgb, var(--text) 58%, transparent) !important;
+  color: color-mix(in srgb, var(--text) 72%, transparent) !important;
 }
 
 .theme-glass .app-segmented-tab:not([data-active='true']):hover {
-  color: color-mix(in srgb, var(--text) 82%, transparent) !important;
+  color: color-mix(in srgb, var(--text) 92%, transparent) !important;
 }
 
 .theme-glass .app-segmented-tab::before {
@@ -227,10 +228,10 @@ body {
   border-radius: inherit;
   opacity: 0;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 10%, rgba(255, 255, 255, 0.03)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 9%, #040504);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.008)),
+    rgba(3, 3, 3, 0.74);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--accent-color) 12%, rgba(255, 255, 255, 0.05)) inset;
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
   transition:
     opacity 180ms var(--ease-standard),
     transform 180ms var(--ease-out-soft);
@@ -277,8 +278,8 @@ body {
 }
 
 .theme-glass .app-glass-menu-item[data-active='true'] {
-  color: var(--accent-color);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 20%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--glass-accent-ring);
 }
 
 .theme-glass .app-glass-list {
@@ -306,8 +307,8 @@ body {
 .theme-glass .app-input {
   border-color: var(--glass-border-strong);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 5%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 3%, #050605);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.006)),
+    rgba(7, 7, 7, 0.76);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.07) inset,
     0 10px 24px rgba(0, 0, 0, 0.24);
@@ -316,16 +317,16 @@ body {
 .theme-glass .app-command {
   border-color: var(--glass-border-strong);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 6%, rgba(255, 255, 255, 0.026)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 4%, #050605);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.008)),
+    rgba(8, 8, 8, 0.76);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
 .theme-glass .app-glass-button {
   border: 1px solid var(--glass-border-strong);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 6%, rgba(255, 255, 255, 0.024)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 4%, #050605);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.036), rgba(255, 255, 255, 0.007)),
+    rgba(7, 7, 7, 0.72);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.075) inset,
     0 8px 22px rgba(0, 0, 0, 0.26);
@@ -334,21 +335,21 @@ body {
 }
 
 .theme-glass .app-glass-button:hover {
-  border-color: color-mix(in srgb, var(--accent-color) 34%, rgba(255, 255, 255, 0.12));
+  border-color: rgba(255, 255, 255, 0.19);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 8%, rgba(255, 255, 255, 0.026)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 7%, #070907);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.046), rgba(255, 255, 255, 0.01)),
+    rgba(12, 12, 12, 0.76);
 }
 
 .theme-glass button[style*='color-mix(in srgb, var(--accent-color) 16%, transparent)'],
 .theme-glass button[style*='color-mix(in srgb, var(--accent-color) 14%, transparent)'] {
-  border-color: color-mix(in srgb, var(--accent-color) 34%, rgba(255, 255, 255, 0.12)) !important;
+  border-color: var(--glass-accent-ring) !important;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.014)),
-    color-mix(in srgb, var(--accent-color) 11%, rgba(0, 0, 0, 0.56)) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.008)),
+    rgba(8, 8, 8, 0.76) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 16%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 10%, transparent),
     0 8px 20px rgba(0, 0, 0, 0.24);
   backdrop-filter: blur(18px) saturate(1.14);
   -webkit-backdrop-filter: blur(18px) saturate(1.14);
@@ -357,8 +358,8 @@ body {
 .theme-glass button.border-modrinth-border,
 .theme-glass label.border-modrinth-border {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 4%, rgba(255, 255, 255, 0.016)), rgba(255, 255, 255, 0.003)),
-    color-mix(in srgb, var(--accent-color) 3%, #040504);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.005)),
+    rgba(6, 6, 6, 0.7);
 }
 
 .theme-glass .app-command:hover {
@@ -425,8 +426,8 @@ body {
 .theme-glass .app-select-menu,
 .theme-glass .app-glass-menu {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 4%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.003)),
-    #040604 !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.034), rgba(255, 255, 255, 0.006)),
+    #050505 !important;
 }
 
 .theme-glass .app-glass-button,
@@ -435,22 +436,22 @@ body {
 .theme-glass button.border-modrinth-border,
 .theme-glass label.border-modrinth-border {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 5%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.003)),
-    color-mix(in srgb, var(--accent-color) 3%, #040604) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.005)),
+    rgba(6, 6, 6, 0.74) !important;
 }
 
 .theme-glass .app-glass-button:hover,
 .theme-glass .app-command:hover,
 .theme-glass .app-select-control:hover {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 8%, rgba(255, 255, 255, 0.022)), rgba(255, 255, 255, 0.004)),
-    color-mix(in srgb, var(--accent-color) 6%, #060806) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.046), rgba(255, 255, 255, 0.008)),
+    rgba(12, 12, 12, 0.78) !important;
 }
 
 .theme-glass .app-segmented-tabs {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-color) 8%, rgba(255, 255, 255, 0.018)), rgba(255, 255, 255, 0.003)),
-    color-mix(in srgb, var(--accent-color) 3%, #020302) !important;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.006)),
+    rgba(0, 0, 0, 0.58) !important;
 }
 
 .theme-glass .app-segmented-tab {
@@ -470,7 +471,7 @@ body {
 
 .theme-glass .app-segmented-tab[data-active='true'] {
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 34%, rgba(255, 255, 255, 0.07)),
+    inset 0 0 0 1px var(--glass-accent-ring),
     0 8px 22px rgba(0, 0, 0, 0.22) !important;
 }
 
@@ -489,7 +490,7 @@ body {
 .theme-glass .app-command:hover,
 .theme-glass .app-select-control:hover,
 .theme-glass .app-input:focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 13%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 8%, transparent);
 }
 
 button,
