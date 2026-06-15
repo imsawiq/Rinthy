@@ -109,7 +109,7 @@ export const LanguageSelect: React.FC<{
       onClick={requestClose}
     >
       <div
-        className={`app-responsive-sheet w-full max-w-sm overflow-y-auto border p-2 shadow-[0_18px_44px_rgba(0,0,0,0.42)] ${
+        className={`app-responsive-sheet app-glass-menu app-glass-list w-full max-w-sm overflow-y-auto border p-2 shadow-[0_18px_44px_rgba(0,0,0,0.42)] ${
           theme === 'light'
             ? 'border-black/10 text-zinc-950'
             : 'bg-modrinth-card border-modrinth-border'
@@ -123,13 +123,14 @@ export const LanguageSelect: React.FC<{
             <button
               key={option.code}
               type="button"
+              data-active={active ? 'true' : undefined}
               onClick={() => {
                 onChange(option.code);
                 requestClose();
               }}
-              className={`w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+              className={`app-glass-menu-item w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                 active
-                  ? 'bg-modrinth-green/14 text-modrinth-green'
+                  ? 'text-modrinth-green'
                   : theme === 'light'
                     ? 'text-black/70 hover:bg-black/[0.05]'
                     : 'text-modrinth-text hover:bg-modrinth-cardHover'
@@ -155,7 +156,7 @@ export const LanguageSelect: React.FC<{
           setClosing(false);
           setOpen(true);
         }}
-        className={`w-full flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
+        className={`app-glass-button w-full flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors ${
           theme === 'light'
             ? 'bg-black/[0.04] border-black/10 hover:bg-black/[0.06]'
             : 'bg-modrinth-bg border-modrinth-border hover:bg-modrinth-cardHover'

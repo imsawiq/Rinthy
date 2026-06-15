@@ -784,19 +784,19 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
           ) : <div className="h-9 w-10 shrink-0" />}
         </div>
         <div className="px-4 pb-3">
-          <div className="grid grid-cols-4 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
+          <div className="app-segmented-tabs grid grid-cols-4 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
           {projectTabs.map((tab) => (
             <button
               key={tab}
               onClick={() => {
                 setActiveTab(tab);
               }}
-              className={`relative min-w-0 overflow-hidden rounded-md px-2 py-2 text-[10px] font-extrabold leading-tight transition-colors ${
+              data-active={activeTab === tab ? 'true' : undefined}
+              className={`app-segmented-tab relative min-w-0 overflow-hidden rounded-md px-2 py-2 text-[10px] font-extrabold leading-tight transition-colors ${
                 activeTab === tab
                   ? 'text-modrinth-green shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent-color)_32%,var(--border))]'
                   : 'text-modrinth-muted hover:text-modrinth-text hover:bg-modrinth-cardHover/60'
               }`}
-              style={activeTab === tab ? { backgroundColor: 'color-mix(in srgb, var(--accent-color) 14%, var(--card))' } : undefined}
             >
               <span className="block truncate">{t(tab)}</span>
             </button>
@@ -1056,7 +1056,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
                 </div>
                 <div>
                   <label className="app-form-label">{translateEnum('version_type', 'Type')}</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="app-segmented-tabs grid grid-cols-3 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
                     {versionTypeOptions.map((type) => {
                       const active = creatingVersionType === type;
                       return (
@@ -1064,8 +1064,8 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
                           key={type}
                           type="button"
                           onClick={() => setCreatingVersionType(type)}
-                          style={active ? { borderColor: 'var(--accent-color)', backgroundColor: 'color-mix(in srgb, var(--accent-color) 16%, transparent)' } : undefined}
-                          className={`rounded-lg border px-2 py-2 text-xs font-extrabold uppercase ${active ? 'text-modrinth-text' : 'border-modrinth-border bg-modrinth-bg text-modrinth-muted'}`}
+                          data-active={active ? 'true' : undefined}
+                          className={`app-segmented-tab rounded-md px-2 py-2 text-xs font-extrabold uppercase ${active ? 'text-modrinth-text' : 'text-modrinth-muted'}`}
                         >
                           {t(type)}
                         </button>
@@ -1427,7 +1427,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
 
               <div className="app-panel app-reveal p-4" style={{ animationDelay: '40ms' }}>
                 <label className="app-form-label">{translateEnum('version_type', 'Type')}</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="app-segmented-tabs grid grid-cols-3 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
                   {versionTypeOptions.map((type) => {
                     const active = editingVersionType === type;
                     return (
@@ -1435,8 +1435,8 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
                         key={type}
                         type="button"
                         onClick={() => setEditingVersionType(type)}
-                        style={active ? { borderColor: 'var(--accent-color)', backgroundColor: 'color-mix(in srgb, var(--accent-color) 16%, transparent)' } : undefined}
-                        className={`rounded-lg border px-2 py-2 text-xs font-extrabold uppercase ${active ? 'text-modrinth-text' : 'border-modrinth-border bg-modrinth-bg text-modrinth-muted'}`}
+                        data-active={active ? 'true' : undefined}
+                        className={`app-segmented-tab rounded-md px-2 py-2 text-xs font-extrabold uppercase ${active ? 'text-modrinth-text' : 'text-modrinth-muted'}`}
                       >
                         {t(type)}
                       </button>

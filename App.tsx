@@ -195,6 +195,7 @@ type ResolvedNotification = ModrinthNotification & {
   projectKey: string;
   projectTitle: string | null;
   projectIconUrl: string | null;
+  projectRouteId: string | null;
   entityKind: 'project' | 'organization' | 'notification';
   entityTitle: string | null;
   entityIconUrl: string | null;
@@ -211,6 +212,7 @@ type NotificationGroup = {
   key: string;
   projectTitle: string | null;
   projectIconUrl: string | null;
+  projectRouteId: string | null;
   entityKind: 'project' | 'organization' | 'notification';
   entityTitle: string | null;
   entityIconUrl: string | null;
@@ -374,6 +376,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
     const [pendingReadIds, setPendingReadIds] = useState<Set<string>>(() => new Set());
     const { t, language } = useSettings();
     const { visible, closing, requestClose } = useAnimatedDismiss(isOpen, onClose);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!isOpen) return;
@@ -502,6 +505,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                         projectKey: organization?.id || organization?.slug || project?.id || project?.slug || notif.id,
                         projectTitle: project?.title || null,
                         projectIconUrl: project?.icon_url || null,
+                        projectRouteId: project?.slug || project?.id || projectSlug,
                         entityKind,
                         entityTitle,
                         entityIconUrl,
@@ -527,6 +531,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                 existing.items.push(notif);
                 if (!existing.projectTitle && notif.projectTitle) existing.projectTitle = notif.projectTitle;
                 if (!existing.projectIconUrl && notif.projectIconUrl) existing.projectIconUrl = notif.projectIconUrl;
+                if (!existing.projectRouteId && notif.projectRouteId) existing.projectRouteId = notif.projectRouteId;
                 if (existing.entityKind === 'notification' && notif.entityKind !== 'notification') existing.entityKind = notif.entityKind;
                 if (!existing.entityTitle && notif.entityTitle) existing.entityTitle = notif.entityTitle;
                 if (!existing.entityIconUrl && notif.entityIconUrl) existing.entityIconUrl = notif.entityIconUrl;
@@ -537,6 +542,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                 key: notif.projectKey,
                 projectTitle: notif.projectTitle,
                 projectIconUrl: notif.projectIconUrl,
+                projectRouteId: notif.projectRouteId,
                 entityKind: notif.entityKind,
                 entityTitle: notif.entityTitle,
                 entityIconUrl: notif.entityIconUrl,
@@ -665,6 +671,13 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
         }
     };
 
+    const openProjectFromNotification = (projectRouteId: string | null, ids: string[]) => {
+        if (!projectRouteId) return;
+        void handleReadGroup(ids);
+        requestClose();
+        navigate(`/project/${encodeURIComponent(projectRouteId)}`);
+    };
+
     if (!visible) return null;
 
     return (
@@ -680,7 +693,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                         {notifs.length > 0 && (
-                            <button onClick={handleReadAll} disabled={loading} className="flex h-9 items-center gap-1 rounded-lg bg-modrinth-green/12 px-3 text-xs font-extrabold text-modrinth-green transition-colors hover:bg-modrinth-green/18 disabled:opacity-50">
+                            <button onClick={handleReadAll} disabled={loading} className="app-glass-button flex h-9 items-center gap-1 rounded-lg px-3 text-xs font-extrabold text-modrinth-green transition-colors disabled:opacity-50">
                                 <CheckCheck size={14}/> <span>{t('read_all')}</span>
                             </button>
                         )}
@@ -712,7 +725,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                             : primary.displayText;
 
                         return (
-                            <div key={group.key} className="app-panel-soft relative overflow-hidden p-3 sm:p-4">
+                            <div key={group.key} className="app-notification-card app-panel-soft relative overflow-hidden p-3 sm:p-4">
                                 <div className="flex gap-3">
                                     {group.entityIconUrl ? (
                                         <img src={group.entityIconUrl} alt={group.entityTitle || 'Notification'} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
@@ -742,7 +755,18 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
 
                                 <div className="mt-3 space-y-2">
                                     {(expanded ? group.items : group.items.slice(0, 1)).map((item) => (
-                                        <div key={item.id} className="rounded-lg bg-modrinth-cardHover/60 px-3 py-2.5">
+                                        <div
+                                            key={item.id}
+                                            role={item.projectRouteId ? 'button' : undefined}
+                                            tabIndex={item.projectRouteId ? 0 : undefined}
+                                            onClick={() => openProjectFromNotification(item.projectRouteId, [item.id])}
+                                            onKeyDown={(event) => {
+                                                if (!item.projectRouteId || (event.key !== 'Enter' && event.key !== ' ')) return;
+                                                event.preventDefault();
+                                                openProjectFromNotification(item.projectRouteId, [item.id]);
+                                            }}
+                                            className={`app-notification-item rounded-lg px-3 py-2.5 ${item.projectRouteId ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-modrinth-green/35' : ''}`}
+                                        >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     <div className="text-sm text-modrinth-text leading-snug break-words">
@@ -752,7 +776,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                                     <div className="mt-1 flex items-center gap-3 text-[11px] text-modrinth-muted/80">
                                                         <span>{formatNotificationRelativeTime(item.created, language)}</span>
                                                         {getModrinthLink(item.link) && (
-                                                            <a href={getModrinthLink(item.link) || undefined} target="_blank" rel="noopener noreferrer" className="text-modrinth-green hover:underline flex items-center gap-1 truncate">
+                                                            <a href={getModrinthLink(item.link) || undefined} target="_blank" rel="noopener noreferrer" onClick={(event) => event.stopPropagation()} className="text-modrinth-green hover:underline flex items-center gap-1 truncate">
                                                                 View <ExternalLink size={10}/>
                                                             </a>
                                                         )}
@@ -763,9 +787,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                                                 <button
                                                                     key={`${item.id}-action-${actionIndex}`}
                                                                     type="button"
-                                                                    onClick={() => handleNotificationAction(item, action.action_route)}
+                                                                    onClick={(event) => {
+                                                                        event.stopPropagation();
+                                                                        handleNotificationAction(item, action.action_route);
+                                                                    }}
                                                                     disabled={!action.action_route || pendingReadIds.has(item.id)}
-                                                                    className="rounded-lg bg-modrinth-green/12 px-3 py-1.5 text-[11px] font-extrabold text-modrinth-green transition-colors hover:bg-modrinth-green/18 disabled:opacity-50"
+                                                                    className="app-glass-button rounded-lg px-3 py-1.5 text-[11px] font-extrabold text-modrinth-green transition-colors disabled:opacity-50"
                                                                 >
                                                                     {action.title || t('accept_invite')}
                                                                 </button>
@@ -775,9 +802,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                                 </div>
                                                 {group.items.length === 1 && (
                                                     <button
-                                                        onClick={() => handleRead(item.id)}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleRead(item.id);
+                                                        }}
                                                         disabled={pendingReadIds.has(item.id)}
-                                                        className="relative text-modrinth-green hover:bg-modrinth-cardHover self-start p-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                                                        className="relative text-modrinth-green self-start p-1.5 rounded-lg transition-colors hover:text-modrinth-text disabled:opacity-50 disabled:pointer-events-none"
                                                     >
                                                         <Check size={16}/>
                                                     </button>
@@ -790,7 +820,7 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
                                 {group.items.length > 1 && (
                                     <button
                                         onClick={() => setExpandedGroups((prev) => ({ ...prev, [group.key]: !expanded }))}
-                                        className="mt-3 rounded-lg bg-modrinth-cardHover px-3 py-2 text-xs font-bold text-modrinth-muted transition-colors hover:text-modrinth-text"
+                                        className="app-glass-button mt-3 rounded-lg px-3 py-2 text-xs font-bold text-modrinth-muted transition-colors hover:text-modrinth-text"
                                     >
                                         {expanded ? t('hide_versions') : `${t('show_more_versions')} (${group.items.length})`}
                                     </button>
@@ -798,9 +828,12 @@ const NotificationsModal: React.FC<{ isOpen: boolean; onClose: () => void; user:
 
                                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                                     <button
-                                        onClick={() => handleReadGroup(groupActionIds)}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            handleReadGroup(groupActionIds);
+                                        }}
                                         disabled={groupActionIds.some((id) => pendingReadIds.has(id))}
-                                        className="flex items-center gap-1.5 rounded-lg bg-modrinth-cardHover px-3.5 py-2 text-xs font-bold text-modrinth-text transition-colors hover:bg-modrinth-border/70 disabled:pointer-events-none disabled:opacity-50"
+                                        className="app-glass-button flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold text-modrinth-text transition-colors disabled:pointer-events-none disabled:opacity-50"
                                     >
                                         <Check size={14} /> {t('mark_group_as_read')}
                                     </button>
@@ -1042,7 +1075,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
               <button
                 type="button"
                 onClick={() => setShowSortMenu((prev) => !prev)}
-                className={`app-command inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
+                 className={`app-command app-glass-button inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
                   theme === 'light'
                     ? 'bg-white/80 border-black/10 text-black/70 hover:bg-white'
                     : ''
@@ -1054,7 +1087,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
               </button>
               {showSortMenu && (
                 <div
-                  className={`absolute right-0 top-[calc(100%+0.35rem)] z-40 min-w-[220px] rounded-lg border p-2 shadow-[0_14px_30px_rgba(0,0,0,0.24)] ${
+                   className={`app-glass-menu absolute right-0 top-[calc(100%+0.35rem)] z-40 min-w-[220px] rounded-lg border p-2 shadow-[0_14px_30px_rgba(0,0,0,0.24)] ${
                     theme === 'light'
                       ? 'bg-white/95 border-black/10'
                       : 'bg-modrinth-card border-modrinth-border'
@@ -1063,7 +1096,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-modrinth-muted">
                     {t('sort_by')}
                   </div>
-                  <div className="mt-1 space-y-1">
+                  <div className="app-glass-list mt-1">
                     {PROJECT_SORT_OPTIONS.map((mode) => {
                       const active = sortMode === mode;
                       return (
@@ -1071,9 +1104,10 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                           key={mode}
                           type="button"
                           onClick={() => handleChangeSortMode(mode)}
-                          className={`w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm leading-5 transition-colors ${
-                            active
-                              ? 'bg-modrinth-green/14 text-modrinth-green'
+                           data-active={active ? 'true' : undefined}
+                           className={`app-glass-menu-item w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm leading-5 transition-colors ${
+                             active
+                              ? 'text-modrinth-green'
                               : theme === 'light'
                                 ? 'text-black/70 hover:bg-black/[0.05]'
                                 : 'text-modrinth-text hover:bg-modrinth-cardHover'
@@ -1415,6 +1449,8 @@ const formatAnalyticsMetricValue = (metric: AnalyticsSeriesMetric, value: number
   if (metric === 'playtime') return formatPlaytime(value);
   return Math.round(value).toLocaleString();
 };
+
+const formatSignedPercent = (value: number) => `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString()}%`;
 
 const APP_DATE_LOCALES: Record<Language, string> = {
   en: 'en-US',
@@ -1819,6 +1855,17 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
   const analyticsV3Available = analyticsV3Status === 200;
   const analyticsV3RevenueAvailable = analyticsV3RevenueStatus === 200;
   const trendPoints = seriesMetric === 'revenue' ? analyticsV3RevenuePoints : analyticsV3Points;
+  const trendSummary = useMemo(() => {
+    const values = trendPoints.map((point) => getAnalyticsMetricValue(point, seriesMetric));
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const peak = Math.max(...values, 0);
+    const average = values.length > 0 ? total / values.length : 0;
+    const middle = Math.max(1, Math.floor(values.length / 2));
+    const previousTotal = values.slice(0, middle).reduce((sum, value) => sum + value, 0);
+    const recentTotal = values.slice(middle).reduce((sum, value) => sum + value, 0);
+    const changePercent = previousTotal > 0 ? ((recentTotal - previousTotal) / previousTotal) * 100 : null;
+    return { average, peak, changePercent };
+  }, [seriesMetric, trendPoints]);
   const rangeDownloads = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'downloads') : weeklySummary.downloads;
   const rangeViews = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'views') : 0;
   const rangePlaytime = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'playtime') : 0;
@@ -2136,7 +2183,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 onClick={() => setAnalyticsRangeDays(days as 7 | 30 | 90)}
                 className={`min-w-10 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 active:scale-95 ${
                   analyticsRangeDays === days
-                    ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_rgba(56,193,114,0.18)]'
+                    ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent-color)_22%,transparent)]'
                     : 'text-modrinth-muted hover:text-modrinth-text'
                 }`}
               >
@@ -2237,7 +2284,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
       <div className="mb-8 animate-fade-in-up" style={{ animationDelay: '0.13s' }}>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('analytics_trend')}</h3>
-          <div className="grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+          <div className="app-segmented-tabs grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
             {ANALYTICS_SERIES_METRICS.map((item) => {
               const label = item === 'downloads' ? t('downloads') : t(`${item}_label` as any);
               const Icon = item === 'downloads' ? Download : item === 'views' ? Eye : item === 'playtime' ? Timer : DollarSign;
@@ -2245,9 +2292,10 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 <button
                   key={item}
                   onClick={() => setSeriesMetric(item)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
+                  data-active={seriesMetric === item ? 'true' : undefined}
+                  className={`app-segmented-tab flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
                     seriesMetric === item
-                      ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_rgba(56,193,114,0.18)]'
+                      ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent-color)_22%,transparent)]'
                       : 'text-modrinth-muted hover:text-modrinth-text'
                   }`}
                   aria-label={label}
@@ -2269,6 +2317,13 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
               <div className="mt-1 text-2xl font-black text-modrinth-text">
                 {formatAnalyticsMetricValue(seriesMetric, sumAnalyticsMetric(trendPoints, seriesMetric))}
               </div>
+            </div>
+            <div className="grid shrink-0 grid-cols-1 gap-1 text-right text-[10px] font-extrabold uppercase tracking-[0.08em]">
+              <span className="text-modrinth-muted">{t('analytics_avg')} {formatAnalyticsMetricValue(seriesMetric, trendSummary.average)}</span>
+              <span className="text-modrinth-muted">{t('analytics_peak')} {formatAnalyticsMetricValue(seriesMetric, trendSummary.peak)}</span>
+              <span className={trendSummary.changePercent === null ? 'text-modrinth-muted' : trendSummary.changePercent >= 0 ? 'text-modrinth-green' : 'text-red-400'}>
+                {t('analytics_change')} {trendSummary.changePercent === null ? t('analytics_new') : formatSignedPercent(trendSummary.changePercent)}
+              </span>
             </div>
           </div>
           {trendPoints.length > 0 && (seriesMetric !== 'revenue' || analyticsV3RevenueAvailable) && hasAnalyticsMetric(trendPoints, seriesMetric) ? (
@@ -2293,7 +2348,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
             <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('project_analytics')}</h3>
             <div className="mt-1 truncate text-[11px] font-semibold text-modrinth-muted">{analyticsRangeLabel}</div>
           </div>
-          <div className="grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+          <div className="app-segmented-tabs grid grid-cols-4 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
             {ANALYTICS_SERIES_METRICS.map((item) => {
               const label = item === 'downloads' ? t('downloads') : t(`${item}_label` as any);
               const Icon = item === 'downloads' ? Download : item === 'views' ? Eye : item === 'playtime' ? Timer : DollarSign;
@@ -2301,7 +2356,8 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                 <button
                   key={item}
                   onClick={() => setProjectInsightMetric(item)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
+                  data-active={projectInsightMetric === item ? 'true' : undefined}
+                  className={`app-segmented-tab flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 active:scale-95 ${
                     projectInsightMetric === item
                       ? 'bg-modrinth-card text-modrinth-text shadow'
                       : 'text-modrinth-muted hover:text-modrinth-text'
@@ -2535,7 +2591,7 @@ const SettingsActionButton: React.FC<{
     </>
   );
 
-  const className = `flex w-full items-center gap-3 rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-3 ${
+  const className = `app-glass-button flex w-full items-center gap-3 rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-3 ${
     danger ? 'hover:border-red-500/40 hover:bg-red-500/10' : 'hover:border-modrinth-green/40 hover:bg-modrinth-cardHover'
   }`;
 
@@ -2974,13 +3030,6 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
     }
   };
 
-  const clearAnalyticsData = () => {
-    if (!window.confirm(t('clear_analytics_confirm'))) return;
-    localStorage.removeItem(`rinthy_analytics_snapshots_${currUser.id}`);
-    localStorage.removeItem(`rinthy_analytics_snapshots_${currUser.id}_range_resets`);
-    showSettingsNotice(t('analytics_cleared'));
-  };
-
   const clearUpdateCache = () => {
     localStorage.removeItem('latest_release');
     localStorage.removeItem('dismissed_version');
@@ -3046,7 +3095,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
               <span className="truncate rounded-md border border-modrinth-border bg-modrinth-bg px-2 py-1 text-[10px] font-mono text-modrinth-muted">{currUser.id}</span>
             </div>
           </div>
-          <button onClick={()=>setShowProfileEdit(true)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-modrinth-border bg-modrinth-bg text-modrinth-muted hover:border-modrinth-green/40 hover:text-modrinth-green">
+          <button onClick={()=>setShowProfileEdit(true)} className="app-glass-button flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-modrinth-border bg-modrinth-bg text-modrinth-muted hover:border-modrinth-green/40 hover:text-modrinth-green">
             <Edit3 size={18}/>
           </button>
         </div>
@@ -3084,11 +3133,11 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
 
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.08em] text-modrinth-muted"><Moon size={14} /> {t('theme')}</div>
-              <div className="grid grid-cols-3 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
+              <div className="app-segmented-tabs grid grid-cols-3 gap-1 rounded-lg border border-modrinth-border bg-modrinth-bg p-1">
                 {(['dark', 'light', 'glass'] as ThemeMode[]).map(m => {
                   const Icon = m === 'light' ? Sun : m === 'glass' ? Sparkles : Moon;
                   return (
-                    <button key={m} type="button" onClick={() => setTheme(m)} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-extrabold ${theme === m ? 'bg-modrinth-card text-modrinth-text shadow-sm' : 'text-modrinth-muted hover:text-modrinth-text'}`}>
+                    <button key={m} type="button" onClick={() => setTheme(m)} data-active={theme === m ? 'true' : undefined} className={`app-segmented-tab flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-extrabold ${theme === m ? 'bg-modrinth-card text-modrinth-text shadow-sm' : 'text-modrinth-muted hover:text-modrinth-text'}`}>
                       <Icon size={13} />
                       <span className="truncate">{t(m)}</span>
                     </button>
@@ -3100,12 +3149,12 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
             <div>
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.08em] text-modrinth-muted"><Sun size={14} /> {t('accent_color')}</div>
-                <button onClick={resetAppearance} className="rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-1.5 text-xs font-bold text-modrinth-muted hover:border-modrinth-green/40 hover:text-modrinth-text">{t('reset_all')}</button>
+                <button onClick={resetAppearance} className="app-glass-button rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-1.5 text-xs font-bold text-modrinth-muted hover:border-modrinth-green/40 hover:text-modrinth-text">{t('reset_all')}</button>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAccentEditor((value) => !value)}
-                className="flex w-full items-center gap-3 rounded-lg border border-modrinth-border bg-modrinth-bg p-3 text-left hover:border-modrinth-green/40 hover:bg-modrinth-cardHover"
+                className="app-glass-button flex w-full items-center gap-3 rounded-lg border border-modrinth-border bg-modrinth-bg p-3 text-left hover:border-modrinth-green/40 hover:bg-modrinth-cardHover"
               >
                 <span className="h-11 w-11 shrink-0 rounded-lg border border-modrinth-border shadow-[0_10px_22px_rgba(0,0,0,0.22)]" style={{ backgroundColor: draftAccentColor }} />
                 <span className="min-w-0 flex-1">
@@ -3128,7 +3177,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-modrinth-border bg-modrinth-bg p-3">
+            <div className="app-glass-button flex items-center justify-between gap-4 rounded-lg border border-modrinth-border bg-modrinth-bg p-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-sm font-extrabold text-modrinth-text"><Star size={15} className="text-modrinth-green" /> {t('favorite_projects')}</div>
                 <p className="mt-1 text-xs leading-relaxed text-modrinth-muted">{t('favorite_projects_desc')}</p>
@@ -3146,13 +3195,12 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
             <SettingsActionButton icon={<Download size={16} />} title={t('export_settings')} subtitle={t('export_settings_desc')} onClick={exportSettings} />
             <SettingsActionButton icon={<Upload size={16} />} title={t('import_settings')} subtitle={t('import_settings_desc')} onClick={() => importSettingsRef.current?.click()} />
             <SettingsActionButton icon={<RefreshCw size={16} />} title={t('clear_update_cache')} subtitle={t('clear_update_cache_desc')} onClick={clearUpdateCache} />
-            <SettingsActionButton icon={<Trash2 size={16} />} title={t('clear_analytics_data')} subtitle={t('clear_analytics_desc')} onClick={clearAnalyticsData} danger />
           </div>
         </SettingsSection>
 
         <SettingsSection icon={<Info size={17} />} title={t('about_app')} subtitle={`Rinthy v${APP_VERSION}`}>
           <div className="grid gap-2">
-            <div className="flex items-center justify-between rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-3">
+            <div className="app-glass-button flex items-center justify-between rounded-lg border border-modrinth-border bg-modrinth-bg px-3 py-3">
               <span className="text-sm font-bold text-modrinth-text">{t('update_current')}</span>
               <span className="font-mono text-sm text-modrinth-muted">{APP_VERSION}</span>
             </div>

@@ -139,7 +139,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setShowMenu(v => !v); }}
-          className="p-2.5 rounded-lg text-zinc-300 hover:text-modrinth-green hover:bg-modrinth-bg/60 transition-colors"
+          className="p-2.5 rounded-lg text-zinc-300 hover:text-modrinth-green transition-colors"
         >
           <MoreVertical size={20} strokeWidth={2.75} />
         </button>
@@ -151,13 +151,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
 
       {showMenu && (
         <div
-          className="app-floating-menu absolute top-14 right-4 z-50 rounded-lg text-xs overflow-hidden min-w-[188px] bg-modrinth-card border border-modrinth-border shadow-[0_18px_42px_rgba(0,0,0,0.48)]"
+          className="app-floating-menu app-glass-menu absolute top-14 right-4 z-50 rounded-lg text-xs overflow-hidden min-w-[188px] bg-modrinth-card border border-modrinth-border shadow-[0_18px_42px_rgba(0,0,0,0.48)]"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             type="button"
             onClick={handleOpenOnWeb}
-            className="relative w-full px-3 py-2.5 flex items-center gap-2 text-modrinth-text hover:bg-modrinth-bg text-left font-semibold"
+            className="app-glass-menu-item relative w-full px-3 py-2.5 flex items-center gap-2 text-modrinth-text text-left font-semibold"
           >
             <ExternalLink size={14} className="text-modrinth-green" />
             <span>Open on Modrinth</span>
@@ -165,7 +165,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
           <button
             type="button"
             onClick={handleCopyLink}
-            className="relative w-full px-3 py-2.5 flex items-center gap-2 text-modrinth-text hover:bg-modrinth-bg text-left font-semibold"
+            className="app-glass-menu-item relative w-full px-3 py-2.5 flex items-center gap-2 text-modrinth-text text-left font-semibold"
           >
             <Copy size={14} className="text-modrinth-green" />
             <span>Copy link</span>
@@ -174,7 +174,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
             <button
               type="button"
               onClick={handleDeleteProject}
-              className="relative w-full px-3 py-2.5 flex items-center gap-2 text-red-400 hover:bg-red-500/10 text-left font-semibold"
+              className="app-glass-menu-item relative w-full px-3 py-2.5 flex items-center gap-2 text-red-400 text-left font-semibold"
             >
               <Trash2 size={14} />
               <span>{deleteProjectLabel}</span>

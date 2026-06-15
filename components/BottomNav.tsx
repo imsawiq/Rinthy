@@ -25,12 +25,14 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t, theme 
         style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
         <div className="pointer-events-auto">
-          <div className={`relative overflow-hidden rounded-lg border transition-colors duration-300 ${
+          <div className={`app-bottom-nav relative overflow-hidden border transition-colors duration-300 ${
             theme === 'light'
-              ? 'bg-modrinth-card border-black/10 shadow-none'
-              : 'bg-modrinth-card border-modrinth-border shadow-[0_18px_46px_rgba(0,0,0,0.42)]'
+              ? 'rounded-lg bg-modrinth-card border-black/10 shadow-none'
+              : theme === 'glass'
+                ? 'rounded-[2rem] bg-modrinth-card border-modrinth-border shadow-[0_18px_46px_rgba(0,0,0,0.42)]'
+                : 'rounded-lg bg-modrinth-card border-modrinth-border shadow-[0_18px_46px_rgba(0,0,0,0.42)]'
           }`}>
-            <div className="relative h-[60px] px-1.5">
+            <div className={`relative h-[60px] ${theme === 'glass' ? 'px-2 py-1.5' : 'px-1.5'}`}>
               <div className="flex justify-between items-center h-full gap-1">
                 {navItems.map((item) => {
                   const isActive = activeTab === item.id;
@@ -38,14 +40,20 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, t, theme 
                     <button
                       key={item.id}
                       onClick={() => onTabChange(item.id)}
-                      className="relative flex flex-col items-center justify-center gap-1 w-full h-full cursor-pointer group active:scale-[0.98] transition-transform duration-150"
+                      data-active={isActive ? 'true' : undefined}
+                      className={
+                        `app-bottom-nav-item relative flex flex-col items-center justify-center gap-1 w-full cursor-pointer group transition-all duration-200 active:scale-[0.98] ` +
+                        (theme === 'glass'
+                          ? 'h-full rounded-[1.45rem]'
+                          : 'h-full')
+                      }
                     >
-                      <span className={`absolute top-0 h-0.5 w-8 rounded-full transition-all ${isActive ? 'bg-modrinth-green opacity-100' : 'bg-transparent opacity-0'}`} />
+                      <span className={`absolute top-0 h-0.5 w-8 rounded-full transition-all ${isActive && theme !== 'glass' ? 'bg-modrinth-green opacity-100' : 'bg-transparent opacity-0'}`} />
                       <div
                         className={
-                          `relative flex items-center justify-center h-8 w-12 rounded-md transition-all duration-300 overflow-hidden ` +
+                          `relative flex items-center justify-center h-8 w-12 transition-all duration-300 overflow-hidden ${theme === 'glass' ? 'rounded-full' : 'rounded-md'} ` +
                           (isActive
-                            ? 'bg-modrinth-green/16'
+                            ? theme === 'glass' ? 'bg-transparent' : 'bg-modrinth-green/16'
                             : 'bg-transparent hover:bg-modrinth-text/5')
                         }
                       >

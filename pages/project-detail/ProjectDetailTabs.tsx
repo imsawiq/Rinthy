@@ -223,7 +223,7 @@ export const VersionsTab: React.FC<{
       </div>
     ) : (
       versions.map((version, index) => (
-        <div key={version.id} className="app-reveal relative rounded-lg bg-modrinth-card p-4 shadow-[0_10px_24px_rgba(0,0,0,0.14)] transition-transform active:scale-[0.99]" style={{ animationDelay: `${Math.min(index, 8) * 28}ms` }}>
+        <div key={version.id} className="app-panel app-reveal relative rounded-lg p-4 transition-transform active:scale-[0.99]" style={{ animationDelay: `${Math.min(index, 8) * 28}ms` }}>
           <button type="button" onClick={() => setSelectedVersion(version)} className="block w-full text-left">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -263,16 +263,16 @@ export const VersionsTab: React.FC<{
               <button
                 type="button"
                 onClick={(event) => { event.stopPropagation(); setVersionMenuId(prev => prev === version.id ? null : version.id); }}
-                className="rounded-lg p-2 text-modrinth-muted transition-all hover:bg-modrinth-bg hover:text-modrinth-green active:scale-90"
+                className="rounded-lg p-2 text-modrinth-muted transition-all hover:text-modrinth-green active:scale-90"
               >
                 <MoreVertical size={20} strokeWidth={3} />
               </button>
                 {versionMenuId === version.id && (
-                  <div className={`app-floating-menu absolute right-0 z-[120] min-w-[148px] overflow-hidden rounded-lg border border-modrinth-border bg-modrinth-card text-xs shadow-[0_18px_42px_rgba(0,0,0,0.48)] ${index < 2 ? 'top-11' : 'bottom-11'}`}>
-                  <button className="w-full px-3 py-2.5 text-left font-semibold text-modrinth-text hover:bg-modrinth-bg" onClick={() => { setVersionMenuId(null); openEditVersion(version); }}>
+                  <div className={`app-floating-menu app-glass-menu absolute right-0 z-[120] min-w-[148px] overflow-hidden rounded-lg border border-modrinth-border bg-modrinth-card text-xs shadow-[0_18px_42px_rgba(0,0,0,0.48)] ${index < 2 ? 'top-11' : 'bottom-11'}`}>
+                  <button className="app-glass-menu-item w-full px-3 py-2.5 text-left font-semibold text-modrinth-text" onClick={() => { setVersionMenuId(null); openEditVersion(version); }}>
                     Edit
                   </button>
-                  <button className="w-full border-t border-modrinth-border/50 px-3 py-2.5 text-left font-semibold text-red-400 hover:bg-red-500/10" onClick={() => { setVersionMenuId(null); handleDeleteVersion(version); }}>
+                  <button className="app-glass-menu-item w-full border-t border-modrinth-border/50 px-3 py-2.5 text-left font-semibold text-red-400" onClick={() => { setVersionMenuId(null); handleDeleteVersion(version); }}>
                     Delete
                   </button>
                 </div>

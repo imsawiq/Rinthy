@@ -132,12 +132,10 @@ const AppSelect = <T extends string = string>({ value, options, onChange, classN
                 type="button"
                 role="option"
                 aria-selected={isSelected}
-                className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left font-semibold transition-colors hover:bg-modrinth-bg ${compact ? 'text-[11px]' : 'text-sm'}`}
-                style={isSelected ? {
-                  backgroundColor: 'color-mix(in srgb, var(--accent-color) 11%, var(--bg))',
-                  boxShadow: 'inset 2px 0 0 var(--accent-color)',
-                  color: 'var(--text)',
-                } : undefined}
+                data-active={isSelected ? 'true' : undefined}
+                className={`app-glass-menu-item flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left font-semibold transition-colors ${
+                  isSelected ? 'text-modrinth-green' : 'text-modrinth-text hover:bg-modrinth-bg'
+                } ${compact ? 'text-[11px]' : 'text-sm'}`}
                 onClick={() => {
                   onChange(option.value);
                   closeMenu();
