@@ -189,6 +189,8 @@ body {
 
 .theme-glass .app-segmented-tab {
   isolation: isolate;
+  position: relative;
+  overflow: hidden;
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: inset 1px 0 rgba(255, 255, 255, 0.045) !important;
@@ -225,6 +227,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
   border-radius: inherit;
   opacity: 0;
   background:
@@ -455,6 +458,8 @@ body {
 }
 
 .theme-glass .app-segmented-tab {
+  position: relative;
+  overflow: hidden;
   border-radius: 0 !important;
   background: transparent !important;
 }

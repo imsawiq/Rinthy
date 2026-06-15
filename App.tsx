@@ -1467,6 +1467,12 @@ const formatAnalyticsDate = (value: string, language: Language) => {
   return date.toLocaleDateString(APP_DATE_LOCALES[language] || APP_DATE_LOCALES.en, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+const formatAnalyticsChartDate = (value: string, language: Language) => {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return value.slice(5, 10) || value.slice(0, 10);
+  return date.toLocaleDateString(APP_DATE_LOCALES[language] || APP_DATE_LOCALES.en, { month: 'short', day: 'numeric' });
+};
+
 const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: AnalyticsSeriesMetric; language: Language; height?: number }> = ({ points, metric, language, height = 132 }) => {
   const values = points.map((point) => getAnalyticsMetricValue(point, metric));
   const max = Math.max(...values, 1);
@@ -1496,8 +1502,14 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
   values.forEach((_, index) => {
     if (index === 0 || index === values.length - 1 || index === maxIndex || index === minIndex || index % markerEvery === 0) markerIndexes.add(index);
   });
-  const labeledIndexes = new Set([maxIndex, minIndex, Math.max(0, values.length - 1)].filter((index) => index >= 0));
-  if (values.length <= 8) values.forEach((_, index) => labeledIndexes.add(index));
+  const lastIndex = Math.max(0, values.length - 1);
+  const labeledIndexes = new Set<number>();
+  if (values.length <= 8) {
+    values.forEach((_, index) => labeledIndexes.add(index));
+  } else {
+    labeledIndexes.add(lastIndex);
+    if (maxIndex >= 0 && Math.abs(maxIndex - lastIndex) > 2) labeledIndexes.add(maxIndex);
+  }
   const axisValues = [max, min + range / 2, min];
 
   return (
@@ -1529,7 +1541,7 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
         if (!markerIndexes.has(index)) return null;
         const x = getX(index);
         const y = getY(value);
-        const labelY = Math.max(10, y - 8);
+        const labelY = y < 18 ? y + 14 : y - 8;
         const pointTime = getAnalyticsPointTime(points[index]);
         const title = `${formatAnalyticsDate(pointTime, language)}: ${formatAnalyticsMetricValue(metric, value)}`;
         return (
@@ -1548,7 +1560,7 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
       {[0, values.length - 1].map((index) => (
         values[index] !== undefined && (
           <text key={index} x={getX(index)} y={height - 7} textAnchor={index === 0 ? 'start' : 'end'} className="fill-modrinth-muted" fontSize="8" fontWeight="700">
-            {formatAnalyticsDate(getAnalyticsPointTime(points[index]), language)}
+            {formatAnalyticsChartDate(getAnalyticsPointTime(points[index]), language)}
           </text>
         )
       ))}
@@ -2228,14 +2240,15 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
             <h3 className="text-sm font-bold text-modrinth-muted uppercase">{t('range_summary')}</h3>
             <div className="mt-1 truncate text-[11px] font-semibold text-modrinth-muted">{analyticsRangeLabel}</div>
           </div>
-          <div className="flex rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
+          <div className="app-segmented-tabs grid grid-cols-3 rounded-xl border border-modrinth-border bg-modrinth-bg p-1">
             {[7, 30, 90].map((days) => (
               <button
                 key={days}
                 onClick={() => setAnalyticsRangeDays(days as 7 | 30 | 90)}
-                className={`min-w-10 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 active:scale-95 ${
+                data-active={analyticsRangeDays === days ? 'true' : undefined}
+                className={`app-segmented-tab min-w-10 rounded-lg px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 active:scale-95 ${
                   analyticsRangeDays === days
-                    ? 'bg-modrinth-green/18 text-modrinth-green shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent-color)_22%,transparent)]'
+                    ? 'text-modrinth-text'
                     : 'text-modrinth-muted hover:text-modrinth-text'
                 }`}
               >
