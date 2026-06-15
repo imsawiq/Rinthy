@@ -1456,19 +1456,6 @@ const formatAnalyticsChartValue = (metric: AnalyticsSeriesMetric, value: number)
   return formatCompactNumber(Math.round(value));
 };
 
-const selectAnalyticsSampleIndexes = (length: number, preferredCount: number) => {
-  if (length <= 0) return [];
-  if (length <= preferredCount) return Array.from({ length }, (_, index) => index);
-
-  const lastIndex = length - 1;
-  const indexes = new Set<number>([0, lastIndex]);
-  for (let slot = 1; slot < preferredCount - 1; slot += 1) {
-    indexes.add(Math.round((lastIndex * slot) / (preferredCount - 1)));
-  }
-
-  return Array.from(indexes).sort((a, b) => a - b);
-};
-
 const formatSignedPercent = (value: number) => `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString()}%`;
 
 const APP_DATE_LOCALES: Record<Language, string> = {
@@ -1497,6 +1484,7 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
   const max = Math.max(...values, 1);
   const min = Math.min(...values, 0);
   const range = Math.max(max - min, 1);
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, points.length - 1));
   const width = 320;
   const paddingLeft = 34;
   const paddingRight = 12;
@@ -1504,8 +1492,14 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
   const paddingBottom = 26;
   const plotWidth = width - paddingLeft - paddingRight;
   const plotHeight = height - paddingTop - paddingBottom;
+  const lastIndex = Math.max(0, values.length - 1);
+  const safeActiveIndex = Math.min(Math.max(activeIndex, 0), lastIndex);
+  const activeValue = values[safeActiveIndex] ?? 0;
+  const activePointTime = points[safeActiveIndex] ? getAnalyticsPointTime(points[safeActiveIndex]) : '';
   const getX = (index: number) => paddingLeft + (values.length === 1 ? plotWidth : (index / Math.max(1, values.length - 1)) * plotWidth);
   const getY = (value: number) => paddingTop + plotHeight - ((value - min) / range) * plotHeight;
+  const activeX = getX(safeActiveIndex);
+  const activeY = getY(activeValue);
   const linePoints = values.length > 0
     ? values.map((value, index) => {
         const x = getX(index);
@@ -1516,36 +1510,29 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
   const areaPoints = `${paddingLeft},${height - paddingBottom} ${linePoints} ${width - paddingRight},${height - paddingBottom}`;
   const maxIndex = values.indexOf(max);
   const minIndex = values.indexOf(min);
-  const markerEvery = values.length <= 12 ? 1 : Math.ceil(values.length / 14);
-  const lastIndex = Math.max(0, values.length - 1);
-  const chartLabelIndexes = selectAnalyticsSampleIndexes(values.length, values.length <= 8 ? values.length : values.length <= 35 ? 6 : 7);
-  if (
-    values.length > 8 &&
-    maxIndex > 0 &&
-    maxIndex < lastIndex &&
-    !chartLabelIndexes.some((index) => Math.abs(index - maxIndex) <= Math.max(1, Math.ceil(values.length / 24)))
-  ) {
-    chartLabelIndexes.push(maxIndex);
-    chartLabelIndexes.sort((a, b) => a - b);
-  }
+  const markerEvery = values.length <= 14 ? 1 : Math.ceil(values.length / 10);
   const markerIndexes = new Set<number>();
   values.forEach((_, index) => {
-    if (index === 0 || index === values.length - 1 || index === maxIndex || index === minIndex || index % markerEvery === 0) markerIndexes.add(index);
+    if (index === 0 || index === lastIndex || index === maxIndex || index === minIndex || index === safeActiveIndex || index % markerEvery === 0) markerIndexes.add(index);
   });
-  chartLabelIndexes.forEach((index) => markerIndexes.add(index));
-  const floatingLabelIndexes = new Set<number>();
-  if (values.length <= 8) {
-    chartLabelIndexes.forEach((index) => floatingLabelIndexes.add(index));
-  } else {
-    floatingLabelIndexes.add(lastIndex);
-    if (maxIndex > 0 && maxIndex < lastIndex && Math.abs(maxIndex - lastIndex) > Math.max(2, Math.ceil(values.length / 18))) {
-      floatingLabelIndexes.add(maxIndex);
-    }
-  }
   const axisValues = [max, min + range / 2, min];
+
+  useEffect(() => {
+    setActiveIndex(Math.max(0, points.length - 1));
+  }, [metric, points.length]);
 
   return (
     <div>
+      {values.length > 0 && (
+        <div className="mb-1.5 flex items-baseline justify-between gap-3 px-0.5">
+          <span className="min-w-0 truncate text-[10px] font-extrabold text-modrinth-muted">
+            {formatAnalyticsDate(activePointTime, language)}
+          </span>
+          <span className="shrink-0 text-xs font-black text-modrinth-text tabular-nums">
+            {formatAnalyticsMetricValue(metric, activeValue)}
+          </span>
+        </div>
+      )}
       <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible" role="img" aria-label={`${metric} trend`}>
         <defs>
           <linearGradient id={`analytics-gradient-${metric}`} x1="0" x2="1" y1="0" y2="0">
@@ -1570,40 +1557,44 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
         })}
         <polygon points={areaPoints} fill={`url(#analytics-area-${metric})`} />
         <polyline points={linePoints} fill="none" stroke={`url(#analytics-gradient-${metric})`} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        {values.length > 0 && (
+          <line x1={activeX} x2={activeX} y1={paddingTop} y2={height - paddingBottom} className="stroke-modrinth-green/55" strokeWidth="1.5" strokeDasharray="4 6" />
+        )}
         {values.map((value, index) => {
           if (!markerIndexes.has(index)) return null;
           const x = getX(index);
           const y = getY(value);
           const pointTime = getAnalyticsPointTime(points[index]);
           const title = `${formatAnalyticsDate(pointTime, language)}: ${formatAnalyticsMetricValue(metric, value)}`;
-          const labelText = formatAnalyticsChartValue(metric, value);
-          const labelOrder = chartLabelIndexes.includes(index) ? chartLabelIndexes.indexOf(index) : index;
-          const rawLabelY = y < paddingTop + 12 ? y + 15 : y > height - paddingBottom - 12 ? y - 10 : y + (labelOrder % 2 === 0 ? -10 : 15);
-          const labelY = Math.min(height - paddingBottom - 6, Math.max(11, rawLabelY));
-          const labelWidth = Math.min(56, Math.max(24, labelText.length * 5.4 + 10));
-          const labelCenterX = Math.min(width - paddingRight - labelWidth / 2, Math.max(paddingLeft + labelWidth / 2, x));
+          const isActive = index === safeActiveIndex;
           return (
             <g key={index}>
               <title>{title}</title>
-              <line x1={x} x2={x} y1={y + 6} y2={height - paddingBottom} className="stroke-modrinth-border/45" strokeWidth="1" strokeDasharray="3 7" />
-              <circle cx={x} cy={y} r={floatingLabelIndexes.has(index) ? 4 : 3} className="fill-modrinth-green stroke-modrinth-card" strokeWidth="2" />
-              {floatingLabelIndexes.has(index) && (
-                <>
-                  <rect
-                    x={labelCenterX - labelWidth / 2}
-                    y={labelY - 9}
-                    width={labelWidth}
-                    height="12"
-                    rx="6"
-                    className="fill-modrinth-card stroke-modrinth-border/70"
-                    strokeWidth="1"
-                  />
-                  <text x={labelCenterX} y={labelY} textAnchor="middle" className="fill-modrinth-text" fontSize="8" fontWeight="800">
-                    {labelText}
-                  </text>
-                </>
+              {isActive && (
+                <circle cx={x} cy={y} r="7" className="fill-modrinth-green/18 stroke-modrinth-green/45" strokeWidth="1.5" />
               )}
+              <circle cx={x} cy={y} r={isActive ? 4 : 2.5} className={isActive ? 'fill-modrinth-text stroke-modrinth-green' : 'fill-modrinth-green stroke-modrinth-card'} strokeWidth={isActive ? 2 : 1.5} />
             </g>
+          );
+        })}
+        {values.map((_, index) => {
+          const hitWidth = values.length <= 1 ? plotWidth : plotWidth / Math.max(1, values.length - 1);
+          const x = getX(index);
+          const hitX = Math.max(paddingLeft, Math.min(width - paddingRight - hitWidth, x - hitWidth / 2));
+          return (
+            <rect
+              key={`hit-${index}`}
+              x={hitX}
+              y={paddingTop}
+              width={hitWidth}
+              height={plotHeight}
+              fill="transparent"
+              onClick={() => setActiveIndex(index)}
+              onPointerEnter={() => setActiveIndex(index)}
+              onPointerMove={() => setActiveIndex(index)}
+              pointerEvents="all"
+              style={{ cursor: 'pointer' }}
+            />
           );
         })}
         {[0, values.length - 1].map((index) => (
@@ -1614,17 +1605,6 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
           )
         ))}
       </svg>
-      {values.length > 8 && chartLabelIndexes.length > 0 && (
-        <div className="mt-1 grid gap-1 border-t border-modrinth-border/60 pt-2" style={{ gridTemplateColumns: `repeat(${chartLabelIndexes.length}, minmax(0, 1fr))` }}>
-          {chartLabelIndexes.map((index) => (
-            <div key={index} className="min-w-0 text-center">
-              <div className="mx-auto mb-1 h-1 w-1 rounded-full bg-modrinth-green/80" />
-              <div className="truncate text-[8px] font-bold text-modrinth-muted">{formatAnalyticsChartDate(getAnalyticsPointTime(points[index]), language)}</div>
-              <div className="truncate text-[9px] font-black text-modrinth-text">{formatAnalyticsChartValue(metric, values[index])}</div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
