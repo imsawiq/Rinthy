@@ -1450,6 +1450,25 @@ const formatAnalyticsMetricValue = (metric: AnalyticsSeriesMetric, value: number
   return Math.round(value).toLocaleString();
 };
 
+const formatAnalyticsChartValue = (metric: AnalyticsSeriesMetric, value: number) => {
+  if (metric === 'revenue') return value >= 1000 ? `$${formatCompactNumber(value)}` : `$${value >= 10 ? value.toFixed(0) : value.toFixed(2)}`;
+  if (metric === 'playtime') return formatPlaytime(value);
+  return formatCompactNumber(Math.round(value));
+};
+
+const selectAnalyticsSampleIndexes = (length: number, preferredCount: number) => {
+  if (length <= 0) return [];
+  if (length <= preferredCount) return Array.from({ length }, (_, index) => index);
+
+  const lastIndex = length - 1;
+  const indexes = new Set<number>([0, lastIndex]);
+  for (let slot = 1; slot < preferredCount - 1; slot += 1) {
+    indexes.add(Math.round((lastIndex * slot) / (preferredCount - 1)));
+  }
+
+  return Array.from(indexes).sort((a, b) => a - b);
+};
+
 const formatSignedPercent = (value: number) => `${value > 0 ? '+' : ''}${Math.round(value).toLocaleString()}%`;
 
 const APP_DATE_LOCALES: Record<Language, string> = {
@@ -1497,74 +1516,107 @@ const AnalyticsSparkline: React.FC<{ points: ModrinthAnalyticsPoint[]; metric: A
   const areaPoints = `${paddingLeft},${height - paddingBottom} ${linePoints} ${width - paddingRight},${height - paddingBottom}`;
   const maxIndex = values.indexOf(max);
   const minIndex = values.indexOf(min);
-  const markerEvery = values.length <= 8 ? 1 : Math.ceil(values.length / 6);
+  const markerEvery = values.length <= 12 ? 1 : Math.ceil(values.length / 14);
+  const lastIndex = Math.max(0, values.length - 1);
+  const chartLabelIndexes = selectAnalyticsSampleIndexes(values.length, values.length <= 8 ? values.length : values.length <= 35 ? 6 : 7);
+  if (
+    values.length > 8 &&
+    maxIndex > 0 &&
+    maxIndex < lastIndex &&
+    !chartLabelIndexes.some((index) => Math.abs(index - maxIndex) <= Math.max(1, Math.ceil(values.length / 24)))
+  ) {
+    chartLabelIndexes.push(maxIndex);
+    chartLabelIndexes.sort((a, b) => a - b);
+  }
   const markerIndexes = new Set<number>();
   values.forEach((_, index) => {
     if (index === 0 || index === values.length - 1 || index === maxIndex || index === minIndex || index % markerEvery === 0) markerIndexes.add(index);
   });
-  const lastIndex = Math.max(0, values.length - 1);
-  const labeledIndexes = new Set<number>();
-  if (values.length <= 8) {
-    values.forEach((_, index) => labeledIndexes.add(index));
-  } else {
-    labeledIndexes.add(lastIndex);
-    if (maxIndex >= 0 && Math.abs(maxIndex - lastIndex) > 2) labeledIndexes.add(maxIndex);
-  }
+  chartLabelIndexes.forEach((index) => markerIndexes.add(index));
+  const labeledIndexes = new Set<number>(chartLabelIndexes);
   const axisValues = [max, min + range / 2, min];
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible" role="img" aria-label={`${metric} trend`}>
-      <defs>
-        <linearGradient id={`analytics-gradient-${metric}`} x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--accent-color, #38C172)" stopOpacity="1" />
-        </linearGradient>
-        <linearGradient id={`analytics-area-${metric}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.01" />
-        </linearGradient>
-      </defs>
-      {axisValues.map((value, index) => {
-        const y = getY(value);
-        return (
-          <React.Fragment key={`${value}-${index}`}>
-            <line x1={paddingLeft} x2={width - paddingRight} y1={y} y2={y} className="stroke-modrinth-border/70" strokeWidth="1" strokeDasharray={index === 2 ? '0' : '4 8'} />
-            <text x={paddingLeft - 7} y={y + 3} textAnchor="end" className="fill-modrinth-muted" fontSize="8" fontWeight="700">
-              {formatAnalyticsMetricValue(metric, value)}
-            </text>
-          </React.Fragment>
-        );
-      })}
-      <polygon points={areaPoints} fill={`url(#analytics-area-${metric})`} />
-      <polyline points={linePoints} fill="none" stroke={`url(#analytics-gradient-${metric})`} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      {values.map((value, index) => {
-        if (!markerIndexes.has(index)) return null;
-        const x = getX(index);
-        const y = getY(value);
-        const labelY = y < 18 ? y + 14 : y - 8;
-        const pointTime = getAnalyticsPointTime(points[index]);
-        const title = `${formatAnalyticsDate(pointTime, language)}: ${formatAnalyticsMetricValue(metric, value)}`;
-        return (
-          <g key={index}>
-            <title>{title}</title>
-            <line x1={x} x2={x} y1={y + 6} y2={height - paddingBottom} className="stroke-modrinth-border/45" strokeWidth="1" strokeDasharray="3 7" />
-            <circle cx={x} cy={y} r={labeledIndexes.has(index) ? 4 : 3} className="fill-modrinth-green stroke-modrinth-card" strokeWidth="2" />
-            {labeledIndexes.has(index) && (
-              <text x={x} y={labelY} textAnchor={index === 0 ? 'start' : index === values.length - 1 ? 'end' : 'middle'} className="fill-modrinth-text" fontSize="9" fontWeight="800">
-                {formatAnalyticsMetricValue(metric, value)}
+    <div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible" role="img" aria-label={`${metric} trend`}>
+        <defs>
+          <linearGradient id={`analytics-gradient-${metric}`} x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--accent-color, #38C172)" stopOpacity="1" />
+          </linearGradient>
+          <linearGradient id={`analytics-area-${metric}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="var(--accent-color, #38C172)" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+        {axisValues.map((value, index) => {
+          const y = getY(value);
+          return (
+            <React.Fragment key={`${value}-${index}`}>
+              <line x1={paddingLeft} x2={width - paddingRight} y1={y} y2={y} className="stroke-modrinth-border/70" strokeWidth="1" strokeDasharray={index === 2 ? '0' : '4 8'} />
+              <text x={paddingLeft - 7} y={y + 3} textAnchor="end" className="fill-modrinth-muted" fontSize="8" fontWeight="700">
+                {formatAnalyticsChartValue(metric, value)}
               </text>
-            )}
-          </g>
-        );
-      })}
-      {[0, values.length - 1].map((index) => (
-        values[index] !== undefined && (
-          <text key={index} x={getX(index)} y={height - 7} textAnchor={index === 0 ? 'start' : 'end'} className="fill-modrinth-muted" fontSize="8" fontWeight="700">
-            {formatAnalyticsChartDate(getAnalyticsPointTime(points[index]), language)}
-          </text>
-        )
-      ))}
-    </svg>
+            </React.Fragment>
+          );
+        })}
+        <polygon points={areaPoints} fill={`url(#analytics-area-${metric})`} />
+        <polyline points={linePoints} fill="none" stroke={`url(#analytics-gradient-${metric})`} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        {values.map((value, index) => {
+          if (!markerIndexes.has(index)) return null;
+          const x = getX(index);
+          const y = getY(value);
+          const pointTime = getAnalyticsPointTime(points[index]);
+          const title = `${formatAnalyticsDate(pointTime, language)}: ${formatAnalyticsMetricValue(metric, value)}`;
+          const labelText = formatAnalyticsChartValue(metric, value);
+          const labelOrder = chartLabelIndexes.indexOf(index);
+          const rawLabelY = y < paddingTop + 12 ? y + 15 : y > height - paddingBottom - 12 ? y - 10 : y + (labelOrder % 2 === 0 ? -10 : 15);
+          const labelY = Math.min(height - paddingBottom - 6, Math.max(11, rawLabelY));
+          const labelWidth = Math.min(56, Math.max(24, labelText.length * 5.4 + 10));
+          const labelCenterX = Math.min(width - paddingRight - labelWidth / 2, Math.max(paddingLeft + labelWidth / 2, x));
+          return (
+            <g key={index}>
+              <title>{title}</title>
+              <line x1={x} x2={x} y1={y + 6} y2={height - paddingBottom} className="stroke-modrinth-border/45" strokeWidth="1" strokeDasharray="3 7" />
+              <circle cx={x} cy={y} r={labeledIndexes.has(index) ? 4 : 3} className="fill-modrinth-green stroke-modrinth-card" strokeWidth="2" />
+              {labeledIndexes.has(index) && (
+                <>
+                  <rect
+                    x={labelCenterX - labelWidth / 2}
+                    y={labelY - 9}
+                    width={labelWidth}
+                    height="12"
+                    rx="6"
+                    className="fill-modrinth-card stroke-modrinth-border/70"
+                    strokeWidth="1"
+                  />
+                  <text x={labelCenterX} y={labelY} textAnchor="middle" className="fill-modrinth-text" fontSize="8" fontWeight="800">
+                    {labelText}
+                  </text>
+                </>
+              )}
+            </g>
+          );
+        })}
+        {[0, values.length - 1].map((index) => (
+          values[index] !== undefined && (
+            <text key={index} x={getX(index)} y={height - 7} textAnchor={index === 0 ? 'start' : 'end'} className="fill-modrinth-muted" fontSize="8" fontWeight="700">
+              {formatAnalyticsChartDate(getAnalyticsPointTime(points[index]), language)}
+            </text>
+          )
+        ))}
+      </svg>
+      {values.length > 8 && chartLabelIndexes.length > 0 && (
+        <div className="mt-2 grid gap-1" style={{ gridTemplateColumns: `repeat(${chartLabelIndexes.length}, minmax(0, 1fr))` }}>
+          {chartLabelIndexes.map((index) => (
+            <div key={index} className="min-w-0 rounded-lg border border-modrinth-border/70 bg-modrinth-bg/35 px-1.5 py-1 text-center">
+              <div className="truncate text-[8px] font-bold text-modrinth-muted">{formatAnalyticsChartDate(getAnalyticsPointTime(points[index]), language)}</div>
+              <div className="truncate text-[9px] font-black text-modrinth-text">{formatAnalyticsChartValue(metric, values[index])}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
