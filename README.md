@@ -8,6 +8,10 @@
 
 > Rinthy is an unofficial app for Modrinth. It is not affiliated with, endorsed by, or maintained by Modrinth.
 
+## Community
+
+Join the Rinthy Discord server: https://discord.gg/6H5vDq2wk7
+
 ## Screenshots
 
 <div align="center">
@@ -35,10 +39,6 @@
 Android builds are published as APK files in GitHub Releases.
 
 iOS builds are distributed as an unsigned IPA for sideloading. To install the iOS app, use Sideloadly on a computer, sign in to iCloud on Apple's official iCloud app/site, connect your iPhone with a cable, install the IPA, then trust the developer profile in iPhone settings and enable Developer Mode if iOS asks.
-
-## Community
-
-Join the Rinthy Discord server: https://discord.gg/6H5vDq2wk7
 
 ## Authentication
 
