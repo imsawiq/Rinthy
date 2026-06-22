@@ -1,0 +1,51 @@
+workflows:
+  ios-unsigned-ipa:
+    name: iOS unsigned IPA for sideloading
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: v22.11.0
+      xcode: latest
+      cocoapods: default
+      vars:
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+          npm install @capacitor/ios@^6
+      - name: Build web app
+        script: |
+          npm run build
+      - name: Add and sync iOS platform
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+      - name: Build unsigned iOS app
+        script: |
+          xcodebuild build \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$CM_BUILD_DIR/build/ios/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package unsigned IPA
+        script: |
+          APP_PATH=$(find "$CM_BUILD_DIR/build/ios/DerivedData/Build/Products/Release-iphoneos" -name "*.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found"
+            exit 1
+          fi
+
+          mkdir -p "$CM_BUILD_DIR/build/ipa/Payload"
+          cp -R "$APP_PATH" "$CM_BUILD_DIR/build/ipa/Payload/"
+          cd "$CM_BUILD_DIR/build/ipa"
+          zip -r Rinthy-unsigned.ipa Payload
+    artifacts:
+      - build/ipa/*.ipa
+      - build/ios/DerivedData/Build/Products/Release-iphoneos/*.app
+      - /tmp/xcodebuild_logs/*.log
