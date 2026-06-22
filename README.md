@@ -36,6 +36,10 @@ Android builds are published as APK files in GitHub Releases.
 
 iOS builds are distributed as an unsigned IPA for sideloading. To install the iOS app, use Sideloadly on a computer, sign in to iCloud on Apple's official iCloud app/site, connect your iPhone with a cable, install the IPA, then trust the developer profile in iPhone settings and enable Developer Mode if iOS asks.
 
+## Community
+
+Join the Rinthy Discord server: https://discord.gg/6H5vDq2wk7
+
 ## Authentication
 
 Rinthy uses Modrinth OAuth for normal sign-in. PAT login is still available as a fallback for development or recovery.
@@ -129,6 +133,10 @@ Rinthy — неофициальное мобильное приложение д
 Android-версия публикуется APK-файлом в GitHub Releases.
 
 iOS-версия доступна как unsigned IPA для sideloading. Чтобы установить её на iPhone, нужен Sideloadly на ПК, вход в iCloud через официальный iCloud от Apple, iPhone по проводу, установка IPA через Sideloadly, доверие профилю разработчика в настройках iPhone и Developer Mode, если iOS попросит его включить.
+
+## Сообщество
+
+Discord-сервер Rinthy: https://discord.gg/6H5vDq2wk7
 
 ## Авторизация
 
