@@ -89,7 +89,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
 
           if (!allowed) return null;
 
-          return <iframe src={src} loading="lazy" referrerPolicy="no-referrer" {...props} />;
+          return <iframe src={src} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" {...props} />;
         },
         code: ({ node: _node, ref: _ref, className: codeClassName, children, ...props }) => (
           <code className={codeClassName} {...props}>
