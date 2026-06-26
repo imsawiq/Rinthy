@@ -319,13 +319,47 @@ body {
   padding: 0.4rem;
 }
 
+.theme-glass .app-language-list .app-language-option {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+}
+
 .theme-glass .app-language-list .app-language-option[data-active='true'] {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.012)),
-    color-mix(in srgb, var(--accent-color) 7%, #0f0f0f) !important;
+  background: transparent !important;
+  border-radius: 0.76rem !important;
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 26%, rgba(255, 255, 255, 0.06)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    inset 0 0 0 1px var(--glass-accent-ring),
+    0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.theme-glass .app-language-list .app-language-option::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.008)),
+    rgba(3, 3, 3, 0.74);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  transition:
+    opacity 180ms var(--ease-standard),
+    transform 180ms var(--ease-out-soft);
+  transform: scale(0.985);
+}
+
+.theme-glass .app-language-list .app-language-option[data-active='true']::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.theme-glass .app-language-list .app-language-option > * {
+  position: relative;
+  z-index: 1;
 }
 
 .theme-glass .app-input {
