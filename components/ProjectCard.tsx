@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ModrinthProject } from '../types';
 import { Download, ChevronRight, Globe, Lock, Archive, Clock, Heart, MoreVertical, ExternalLink, Copy, Star, Box, Building2, Trash2 } from 'lucide-react';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 
 interface ProjectCardProps {
   project: ModrinthProject;
@@ -35,6 +36,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const projectUrl = `https://modrinth.com/project/${project.slug || project.id}`;
+  useBackDismiss(showMenu, () => setShowMenu(false));
 
   const clearPressedControl = (target: Element) => {
     window.requestAnimationFrame(() => {

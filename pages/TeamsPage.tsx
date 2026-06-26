@@ -45,6 +45,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import type { MemberEdit } from './project-detail/ProjectDetailTabs';
 import AppSelect from '../components/AppSelect';
 import { showToast } from '../utils/toast';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 
 const DISMISS_ANIMATION_MS = 180;
 
@@ -80,6 +81,8 @@ const useAnimatedDismiss = (isOpen: boolean, onClose: () => void) => {
       onClose();
     }, DISMISS_ANIMATION_MS);
   }, [closing, onClose]);
+
+  useBackDismiss(visible, requestClose);
 
   return { visible, closing, requestClose };
 };

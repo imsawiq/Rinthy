@@ -15,6 +15,7 @@ import { LanguageSelect, SettingsProvider, useSettings } from './contexts/Settin
 import { calculateWeeklySummary, createAnalyticsSnapshot, readAnalyticsSnapshots, saveAnalyticsSnapshot } from './utils/analyticsSnapshots';
 import { formatProjectsCountLabel, getStoredProjectSortMode, PROJECT_SORT_OPTIONS, ProjectSortMode, readFavoriteProjectIds, saveFavoriteProjectIds, saveProjectSortMode, sortProjectsByMode } from './utils/projectPrefs';
 import { showToast } from './utils/toast';
+import { dismissTopBackLayer, useBackDismiss } from './hooks/useBackDismiss';
 const MarkdownRenderer = React.lazy(() => import('./components/MarkdownRenderer'));
 const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'));
 
@@ -31,6 +32,7 @@ const BackButtonHandler: React.FC = () => {
 
     const handleBackButton = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (cancelled) return;
+      if (dismissTopBackLayer()) return;
       if (location.pathname !== '/') {
         navigate(-1);
       } else {
@@ -303,6 +305,8 @@ const useAnimatedDismiss = (isOpen: boolean, onClose: () => void) => {
       onClose();
     }, DISMISS_ANIMATION_MS);
   }, [closing, onClose]);
+
+  useBackDismiss(visible, requestClose);
 
   return { visible, closing, requestClose };
 };
@@ -966,6 +970,8 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
     setShowSortMenu(false);
     saveProjectSortMode(mode);
   };
+
+  useBackDismiss(showSortMenu, () => setShowSortMenu(false));
 
   const handleToggleFavoriteProject = useCallback((projectId: string) => {
     setFavoriteProjectIds((prev) => {
@@ -3018,6 +3024,7 @@ const SettingsPage: React.FC<{ user: ModrinthUser; onLogout: () => void; token: 
   const settingsMountedRef = useRef(true);
   const latestVersion = settingsRelease?.tag_name.replace(/^v/, '') || null;
   const isOutdated = latestVersion ? compareVersions(latestVersion, APP_VERSION) > 0 : false;
+  useBackDismiss(showAccentEditor, () => setShowAccentEditor(false));
 
   const reloadUser = () => {
     fetchCurrentUser(token)

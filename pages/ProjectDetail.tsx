@@ -8,6 +8,7 @@ import { EditTab, MembersTab, OverviewTab, VersionsTab, projectTabs } from './pr
 import type { MemberEdit, ProjectTab } from './project-detail/ProjectDetailTabs';
 import AppSelect from '../components/AppSelect';
 import { showToast } from '../utils/toast';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 
 const MarkdownRenderer = React.lazy(() => import('../components/MarkdownRenderer'));
 const DISMISS_ANIMATION_MS = 180;
@@ -51,6 +52,8 @@ const useAnimatedDismiss = (isOpen: boolean, onClose: () => void) => {
       onClose();
     }, DISMISS_ANIMATION_MS);
   }, [closing, onClose]);
+
+  useBackDismiss(visible, requestClose);
 
   return { visible, closing, requestClose };
 };
@@ -826,6 +829,13 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
       setSelectedVersionClosing(false);
     }, DISMISS_ANIMATION_MS);
   };
+
+  useBackDismiss(!!versionMenuId, () => setVersionMenuId(null));
+  useBackDismiss(!!transferCandidate, closeTransferCandidate);
+  useBackDismiss(!!galleryPreviewUrl, closeGalleryPreview);
+  useBackDismiss(!!selectedVersion, closeSelectedVersion);
+  useBackDismiss(creatingVersion, () => setCreatingVersion(false));
+  useBackDismiss(!!editingVersion, () => setEditingVersion(null));
 
   if (loading && !project) return <div className="h-screen flex items-center justify-center bg-modrinth-bg"><Loader2 className="animate-spin text-modrinth-green w-10 h-10" /></div>;
   if (!project) return <div className="h-screen flex items-center justify-center bg-modrinth-bg text-modrinth-text">Not Found</div>;

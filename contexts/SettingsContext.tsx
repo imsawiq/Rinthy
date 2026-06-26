@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import type { Language, SettingsContextType, ThemeMode } from '../types';
 import { DEFAULT_LANGUAGE, isSupportedLanguage, LANGUAGE_OPTIONS, TRANSLATIONS } from '../locales';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 
 const SHOW_FAVORITE_PROJECTS_KEY = 'show_favorite_projects';
 const THEME_CLASSES = ['theme-dark', 'theme-light', 'theme-glass'] as const;
@@ -102,6 +103,8 @@ export const LanguageSelect: React.FC<{
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open]);
+
+  useBackDismiss(open, requestClose);
 
   useEffect(() => () => {
     if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current);

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown } from 'lucide-react';
+import { useBackDismiss } from '../hooks/useBackDismiss';
 
 export type AppSelectOption<T extends string = string> = {
   value: T;
@@ -59,6 +60,8 @@ const AppSelect = <T extends string = string>({ value, options, onChange, classN
     setPhase('closing');
     closeTimerRef.current = window.setTimeout(() => setPhase('closed'), 120);
   };
+
+  useBackDismiss(open, closeMenu);
 
   useEffect(() => {
     if (!visible) return;
