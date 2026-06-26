@@ -110,7 +110,7 @@ export const LanguageSelect: React.FC<{
   const menu = open ? (
     <div
       data-closing={closing ? 'true' : undefined}
-      className="app-overlay fixed inset-0 flex items-end bg-black/55 p-4 pt-safe sm:items-center sm:justify-center"
+      className="app-overlay fixed inset-0 flex items-end justify-center bg-black/55 p-4 pt-safe sm:items-center sm:p-6"
       style={{ zIndex: 2147483647 }}
       onClick={requestClose}
     >
