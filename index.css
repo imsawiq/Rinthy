@@ -12,20 +12,27 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
   scrollbar-color: transparent transparent;
   scrollbar-gutter: stable;
   scrollbar-width: none;
   background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 body {
   letter-spacing: 0;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-touch-callout: none;
 }
 
 #root {
   width: 100%;
   max-width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: clip;
   background: var(--bg);
 }
@@ -192,19 +199,19 @@ body {
   position: relative;
   overflow: hidden;
   background: transparent !important;
-  border-radius: 0 !important;
-  box-shadow: inset 1px 0 rgba(255, 255, 255, 0.045) !important;
+  border-radius: 0.76rem !important;
+  box-shadow: none !important;
 }
 
 .theme-glass .app-segmented-tab:first-child {
-  border-bottom-left-radius: 0.56rem !important;
-  border-top-left-radius: 0.56rem !important;
+  border-bottom-left-radius: 0.76rem !important;
+  border-top-left-radius: 0.76rem !important;
   box-shadow: none !important;
 }
 
 .theme-glass .app-segmented-tab:last-child {
-  border-bottom-right-radius: 0.56rem !important;
-  border-top-right-radius: 0.56rem !important;
+  border-bottom-right-radius: 0.76rem !important;
+  border-top-right-radius: 0.76rem !important;
 }
 
 .theme-glass .app-segmented-tab[data-active='true'] {
@@ -304,7 +311,7 @@ body {
 }
 
 .theme-glass .app-glass-list .app-glass-menu-item + .app-glass-menu-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.045);
+  border-top: 0;
 }
 
 .theme-glass .app-input {
@@ -452,6 +459,10 @@ body {
 }
 
 .theme-glass .app-segmented-tabs {
+  gap: 0.25rem !important;
+  padding: 0.24rem !important;
+  border-color: rgba(255, 255, 255, 0.105) !important;
+  border-radius: 0.95rem !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.006)),
     rgba(0, 0, 0, 0.58) !important;
@@ -460,23 +471,27 @@ body {
 .theme-glass .app-segmented-tab {
   position: relative;
   overflow: hidden;
-  border-radius: 0 !important;
+  border-radius: 0.76rem !important;
   background: transparent !important;
+  box-shadow: none !important;
 }
 
 .theme-glass .app-segmented-tab:first-child {
-  border-bottom-left-radius: 0.56rem !important;
-  border-top-left-radius: 0.56rem !important;
+  border-bottom-left-radius: 0.76rem !important;
+  border-top-left-radius: 0.76rem !important;
 }
 
 .theme-glass .app-segmented-tab:last-child {
-  border-bottom-right-radius: 0.56rem !important;
-  border-top-right-radius: 0.56rem !important;
+  border-bottom-right-radius: 0.76rem !important;
+  border-top-right-radius: 0.76rem !important;
 }
 
 .theme-glass .app-segmented-tab[data-active='true'] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.68) !important;
   box-shadow:
-    inset 0 0 0 1px var(--glass-accent-ring),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.095),
     0 8px 22px rgba(0, 0, 0, 0.22) !important;
 }
 
@@ -739,7 +754,9 @@ button:disabled {
 }
 
 .theme-glass .app-range-tabs {
-  border-color: var(--glass-border-strong);
+  gap: 0.25rem;
+  border-color: rgba(255, 255, 255, 0.105);
+  border-radius: 1rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.006)),
     rgba(0, 0, 0, 0.58);
@@ -751,17 +768,20 @@ button:disabled {
 }
 
 .theme-glass .app-range-tab {
+  border-color: transparent;
+  border-radius: 0.78rem;
   color: color-mix(in srgb, var(--text) 72%, transparent);
+  box-shadow: none;
 }
 
 .theme-glass .app-range-tab[data-active='true'] {
-  border-color: color-mix(in srgb, var(--accent-color) 28%, rgba(255, 255, 255, 0.14));
+  border-color: rgba(255, 255, 255, 0.095);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.006)),
-    color-mix(in srgb, var(--accent-color) 4%, rgba(3, 3, 3, 0.76));
+    rgba(0, 0, 0, 0.68);
   color: var(--text);
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 7%, transparent),
     0 8px 18px rgba(0, 0, 0, 0.26);
 }
 

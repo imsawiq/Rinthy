@@ -1401,6 +1401,10 @@ type AnalyticsProjectInsight = {
   revenue: number;
 };
 
+type RankedAnalyticsProjectInsight = AnalyticsProjectInsight & {
+  value: number;
+};
+
 type AnalyticsMover = {
   id: string;
   title: string;
@@ -1976,8 +1980,14 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
   const rangePlaytime = analyticsV3Available ? sumAnalyticsMetric(analyticsV3Points, 'playtime') : 0;
   const rangeRevenue = analyticsV3RevenueAvailable ? sumAnalyticsMetric(analyticsV3RevenuePoints, 'revenue') : weeklySummary.revenue;
   const hasServerProjectInsights = analyticsV3Available && projectInsights.some((item) => item.downloads > 0 || item.views > 0 || item.playtime > 0 || item.revenue > 0);
-  const sortedProjectInsights = useMemo(
-    () => [...projectInsights].sort((a, b) => b[projectInsightMetric] - a[projectInsightMetric]),
+  const rankedProjectInsights = useMemo<RankedAnalyticsProjectInsight[]>(
+    () => projectInsights
+      .map((item) => ({
+        ...item,
+        value: item[projectInsightMetric]
+      }))
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value),
     [projectInsightMetric, projectInsights]
   );
   const topDownloadProjectInsight = useMemo(
@@ -2460,11 +2470,10 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
           </div>
         </div>
         <div className="app-panel p-4">
-          {sortedProjectInsights.length > 0 && analyticsV3Available ? (
+          {rankedProjectInsights.length > 0 && analyticsV3Available ? (
             <div className="space-y-2">
-              {sortedProjectInsights.slice(0, 8).map((item, index) => {
-                const value = item[projectInsightMetric];
-                const maxProjectValue = Math.max(1, sortedProjectInsights[0]?.[projectInsightMetric] || 0);
+              {rankedProjectInsights.slice(0, 8).map((item, index) => {
+                const maxProjectValue = Math.max(1, rankedProjectInsights[0]?.value || 0);
                 return (
                   <div key={item.project.id} className="app-panel-soft flex items-center gap-3 p-3">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-modrinth-green/15 text-xs font-extrabold text-modrinth-green">
@@ -2480,7 +2489,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-center justify-between gap-3">
                         <div className="truncate text-sm font-extrabold text-modrinth-text">{item.project.title}</div>
-                        <div className="shrink-0 text-sm font-mono font-extrabold text-modrinth-green">{formatAnalyticsMetricValue(projectInsightMetric, value)}</div>
+                        <div className="shrink-0 text-sm font-mono font-extrabold text-modrinth-green">{formatAnalyticsMetricValue(projectInsightMetric, item.value)}</div>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-modrinth-muted">
                         <span>{Math.round(item.views).toLocaleString()} {t('views_label').toLowerCase()}</span>
@@ -2488,7 +2497,7 @@ const AnalyticsPage: React.FC<{ user: ModrinthUser; token: string }> = ({ user, 
                         <span>{formatPlaytime(item.playtime)} {t('playtime_label').toLowerCase()}</span>
                       </div>
                       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-modrinth-bg/80">
-                        <div className="h-full rounded-full app-progress-fill transition-all duration-700" style={{ width: `${Math.max(6, (value / maxProjectValue) * 100)}%` }} />
+                        <div className="h-full rounded-full app-progress-fill transition-all duration-700" style={{ width: `${Math.max(6, (item.value / maxProjectValue) * 100)}%` }} />
                       </div>
                     </div>
                   </div>
