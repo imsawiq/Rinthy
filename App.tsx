@@ -1093,7 +1093,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
               </button>
               {showSortMenu && (
                 <div
-                   className={`app-glass-menu absolute right-0 top-[calc(100%+0.35rem)] z-40 min-w-[220px] rounded-lg border p-2 shadow-[0_14px_30px_rgba(0,0,0,0.24)] ${
+                   className={`app-glass-menu app-sort-menu absolute right-0 top-[calc(100%+0.35rem)] z-40 min-w-[220px] rounded-lg border p-2 shadow-[0_14px_30px_rgba(0,0,0,0.24)] ${
                     theme === 'light'
                       ? 'bg-white/95 border-black/10'
                       : 'bg-modrinth-card border-modrinth-border'
@@ -1102,7 +1102,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-modrinth-muted">
                     {t('sort_by')}
                   </div>
-                  <div className="app-glass-list mt-1">
+                  <div className="app-glass-list app-sort-list mt-1">
                     {PROJECT_SORT_OPTIONS.map((mode) => {
                       const active = sortMode === mode;
                       return (
@@ -1111,7 +1111,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                           type="button"
                           onClick={() => handleChangeSortMode(mode)}
                            data-active={active ? 'true' : undefined}
-                           className={`app-glass-menu-item w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm leading-5 transition-colors ${
+                           className={`app-glass-menu-item app-sort-option w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm leading-5 transition-colors ${
                              active
                               ? 'text-modrinth-green'
                               : theme === 'light'

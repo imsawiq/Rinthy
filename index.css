@@ -362,6 +362,59 @@ body {
   z-index: 1;
 }
 
+.theme-glass .app-sort-menu {
+  border-radius: 0.95rem !important;
+  padding: 0.45rem !important;
+}
+
+.theme-glass .app-sort-list {
+  overflow: hidden;
+}
+
+.theme-glass .app-sort-list .app-sort-option {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-glass .app-sort-list .app-sort-option[data-active='true'] {
+  background: transparent !important;
+  border-radius: 0.76rem !important;
+  color: var(--text) !important;
+  box-shadow:
+    inset 0 0 0 1px var(--glass-accent-ring),
+    0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.theme-glass .app-sort-list .app-sort-option::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.008)),
+    rgba(3, 3, 3, 0.74);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  transition:
+    opacity 180ms var(--ease-standard),
+    transform 180ms var(--ease-out-soft);
+  transform: scale(0.985);
+}
+
+.theme-glass .app-sort-list .app-sort-option[data-active='true']::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.theme-glass .app-sort-list .app-sort-option > * {
+  position: relative;
+  z-index: 1;
+}
+
 .theme-glass .app-input {
   border-color: var(--glass-border-strong);
   background:
