@@ -524,6 +524,20 @@ label {
 
 button,
 a,
+[role='button'] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button,
+a,
 label {
   transition:
     border-color 180ms var(--ease-standard),
@@ -720,6 +734,93 @@ button:disabled {
     color 180ms var(--ease-standard),
     box-shadow 180ms var(--ease-out-soft),
     transform 160ms var(--ease-out-soft);
+}
+
+.app-action-button {
+  border-radius: 0.65rem;
+  color: var(--muted);
+  transition:
+    background-color 180ms var(--ease-standard),
+    color 180ms var(--ease-standard),
+    box-shadow 200ms var(--ease-out-soft),
+    transform 150ms var(--ease-out-soft);
+}
+
+.app-action-button:active {
+  transform: scale(0.92);
+}
+
+.app-action-button[data-active='true'] {
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 18%, transparent);
+}
+
+.app-favorite-button[data-active='true'] {
+  color: #fb923c;
+  background: color-mix(in srgb, #fb923c 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fb923c 18%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .app-project-card:hover {
+    border-color: color-mix(in srgb, var(--accent-color) 35%, var(--border));
+  }
+
+  .app-project-card:hover .app-project-card-title,
+  .app-project-card:hover .app-project-card-chevron {
+    color: var(--accent-color);
+  }
+
+  .app-project-card:hover .app-project-card-chevron {
+    transform: translateX(0.25rem);
+  }
+
+  .app-action-button:hover {
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 9%, transparent);
+  }
+
+  .app-favorite-button:not([data-active='true']):hover {
+    color: #facc15;
+    background: color-mix(in srgb, #facc15 9%, transparent);
+  }
+}
+
+@media (hover: none) {
+  .app-action-button:hover {
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app-action-button[data-active='true']:hover {
+    color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 18%, transparent);
+  }
+
+  .app-favorite-button[data-active='true']:hover {
+    color: #fb923c;
+    background: color-mix(in srgb, #fb923c 10%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #fb923c 18%, transparent);
+  }
+
+  .app-segmented-tab:not([data-active='true']):hover,
+  .app-range-tab:not([data-active='true']):hover,
+  .app-glass-menu-item:not([data-active='true']):hover {
+    color: var(--muted) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .theme-glass .app-segmented-tab:not([data-active='true']):hover,
+  .theme-glass .app-range-tab:not([data-active='true']):hover,
+  .theme-glass .app-glass-menu-item:not([data-active='true']):hover {
+    color: color-mix(in srgb, var(--text) 72%, transparent) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
 }
 
 .app-range-tab:hover {

@@ -248,12 +248,40 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
     () => (hasProjectAccess ? projectTabs : READ_ONLY_PROJECT_TABS),
     [hasProjectAccess]
   );
-  const tabsOrder = visibleTabs;
+  const activeTabRef = useRef<ProjectTab>(activeTab);
+  const visibleTabsRef = useRef<ProjectTab[]>(visibleTabs);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const depInputRef = useRef<HTMLInputElement | null>(null);
   const createDepInputRef = useRef<HTMLInputElement | null>(null);
   const createVersionFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    visibleTabsRef.current = visibleTabs;
+  }, [visibleTabs]);
+
+  const clearPressedControl = (target?: EventTarget | null) => {
+    const element = target instanceof HTMLElement
+      ? target.closest('button, a, [role="button"]') as HTMLElement | null
+      : null;
+
+    window.requestAnimationFrame(() => {
+      element?.blur();
+      if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+    });
+  };
+
+  const switchProjectTab = (tab: ProjectTab, target?: EventTarget | null) => {
+    activeTabRef.current = tab;
+    setActiveTab(tab);
+    clearPressedControl(target);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -331,14 +359,15 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
     // Ignore mostly vertical gestures or very short swipes
     if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
 
-    const currentIndex = tabsOrder.indexOf(activeTab as any);
+    const tabsOrder = visibleTabsRef.current;
+    const currentIndex = tabsOrder.indexOf(activeTabRef.current);
     if (currentIndex === -1) return;
 
     // Left swipe -> next tab, right swipe -> previous tab
     if (dx < 0 && currentIndex < tabsOrder.length - 1) {
-      setActiveTab(tabsOrder[currentIndex + 1]);
+      switchProjectTab(tabsOrder[currentIndex + 1]);
     } else if (dx > 0 && currentIndex > 0) {
-      setActiveTab(tabsOrder[currentIndex - 1]);
+      switchProjectTab(tabsOrder[currentIndex - 1]);
     }
   };
 
@@ -842,9 +871,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
           {visibleTabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => {
-                setActiveTab(tab);
-              }}
+              onClick={(event) => switchProjectTab(tab, event.currentTarget)}
               data-active={activeTab === tab ? 'true' : undefined}
               className={`app-segmented-tab relative min-w-0 overflow-hidden rounded-md px-2 py-2 text-[10px] font-extrabold leading-tight transition-colors ${
                 activeTab === tab

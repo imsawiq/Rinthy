@@ -36,14 +36,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
 
   const projectUrl = `https://modrinth.com/project/${project.slug || project.id}`;
 
+  const clearPressedControl = (target: Element) => {
+    window.requestAnimationFrame(() => {
+      if (target instanceof HTMLElement) target.blur();
+    });
+  };
+
   const handleOpenOnWeb = (e: React.MouseEvent) => {
     e.stopPropagation();
+    clearPressedControl(e.currentTarget);
     window.open(projectUrl, '_blank');
     setShowMenu(false);
   };
 
   const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    clearPressedControl(e.currentTarget);
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(projectUrl);
@@ -64,11 +72,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
+    clearPressedControl(e.currentTarget);
     onToggleFavorite?.(project.id);
   };
 
   const handleDeleteProject = (e: React.MouseEvent) => {
     e.stopPropagation();
+    clearPressedControl(e.currentTarget);
     setShowMenu(false);
     onDeleteProject?.(project);
   };
@@ -90,7 +100,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
     <article
       ref={menuRef}
       onClick={() => onClick(project.id)}
-      className="app-panel mb-3 cursor-pointer group relative overflow-hidden transition-all duration-300 active:scale-[0.992] hover:border-modrinth-green/35"
+      className="app-panel app-project-card mb-3 cursor-pointer relative overflow-hidden transition-all duration-300 active:scale-[0.992]"
     >
       <div className="p-4">
       <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
@@ -105,7 +115,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
           )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="font-extrabold text-modrinth-text text-[17px] leading-tight truncate group-hover:text-modrinth-green transition-colors">
+            <h3 className="app-project-card-title font-extrabold text-modrinth-text text-[17px] leading-tight truncate transition-colors">
               {title}
             </h3>
             <div className="mt-1 flex min-w-0 items-center gap-2">
@@ -126,11 +136,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
           <button
             type="button"
             onClick={handleToggleFavorite}
-            className={`p-2.5 rounded-lg transition-all active:scale-95 ${
-              isFavorite
-                ? 'text-orange-400'
-                : 'text-zinc-400 hover:text-yellow-400 hover:bg-yellow-400/10'
-            }`}
+            data-active={isFavorite ? 'true' : undefined}
+            className="app-action-button app-favorite-button p-2.5"
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Star size={18} strokeWidth={2.6} className={isFavorite ? 'fill-current' : ''} />
@@ -138,8 +145,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
         )}
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); setShowMenu(v => !v); }}
-          className="p-2.5 rounded-lg text-zinc-300 hover:text-modrinth-green transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            clearPressedControl(e.currentTarget);
+            setShowMenu(v => !v);
+          }}
+          data-active={showMenu ? 'true' : undefined}
+          className="app-action-button p-2.5"
+          aria-label="Project actions"
         >
           <MoreVertical size={20} strokeWidth={2.75} />
         </button>
@@ -198,7 +211,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
             {status.label}
           </div>
         </div>
-        <ChevronRight size={17} className="shrink-0 text-modrinth-muted group-hover:text-modrinth-green transition-all transform group-hover:translate-x-1" />
+        <ChevronRight size={17} className="app-project-card-chevron shrink-0 text-modrinth-muted transition-all transform" />
       </div>
       </div>
     </article>
