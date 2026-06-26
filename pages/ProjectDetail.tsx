@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Loader2, Package, Save, Search, X } from 'lucide-react';
 import { addGalleryImage, addTeamMember, changeProjectIcon, createVersion, deleteGalleryImage, deleteProjectIcon, deleteTeamMember, deleteVersionById, fetchGameVersionTags, fetchLoaderTags, fetchOrganizationProjects, fetchProject, fetchProjectDependencies, fetchProjectMembers, fetchProjectVersions, fetchUserOrganizations, fetchUserProjects, joinTeam, modifyVersion, searchUser, transferTeamOwnership, updateProject, updateTeamMember } from '../services/modrinthService';
@@ -278,19 +278,28 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
     });
   };
 
+  const resetProjectTabScroll = useCallback(() => {
+    tabContentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    tabContentRef.current && (tabContentRef.current.scrollTop = 0);
+
+    const scrollingElement = document.scrollingElement || document.documentElement;
+    scrollingElement.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   const switchProjectTab = (tab: ProjectTab, target?: EventTarget | null) => {
-    const shouldResetScroll = activeTabRef.current !== tab;
     activeTabRef.current = tab;
     setActiveTab(tab);
     clearPressedControl(target);
-
-    if (shouldResetScroll) {
-      window.requestAnimationFrame(() => {
-        tabContentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      });
-    }
   };
+
+  useLayoutEffect(() => {
+    resetProjectTabScroll();
+    const timeoutId = window.setTimeout(resetProjectTabScroll, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeTab, resetProjectTabScroll]);
 
   useEffect(() => {
     let cancelled = false;
