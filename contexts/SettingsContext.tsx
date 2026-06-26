@@ -118,7 +118,7 @@ export const LanguageSelect: React.FC<{
       onClick={requestClose}
     >
       <div
-        className={`app-responsive-sheet app-glass-menu app-glass-list w-full max-w-sm overflow-y-auto border p-2 shadow-[0_18px_44px_rgba(0,0,0,0.42)] ${
+        className={`app-responsive-sheet app-glass-menu app-glass-list app-language-list w-full max-w-sm overflow-y-auto border p-2 shadow-[0_18px_44px_rgba(0,0,0,0.42)] ${
           theme === 'light'
             ? 'border-black/10 text-zinc-950'
             : 'bg-modrinth-card border-modrinth-border'
@@ -137,7 +137,7 @@ export const LanguageSelect: React.FC<{
                 onChange(option.code);
                 requestClose();
               }}
-              className={`app-glass-menu-item w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+              className={`app-glass-menu-item app-language-option w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                 active
                   ? 'text-modrinth-green'
                   : theme === 'light'

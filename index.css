@@ -314,6 +314,29 @@ body {
   border-top: 0;
 }
 
+.theme-glass .app-language-list {
+  display: grid;
+  gap: 0.25rem;
+  overflow: hidden;
+  padding: 0.4rem;
+}
+
+.theme-glass .app-language-list .app-language-option,
+.theme-glass .app-language-list .app-language-option:first-child,
+.theme-glass .app-language-list .app-language-option:last-child {
+  border-radius: 0.72rem !important;
+}
+
+.theme-glass .app-language-list .app-language-option[data-active='true'] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.012)),
+    color-mix(in srgb, var(--accent-color) 7%, #0f0f0f) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 26%, rgba(255, 255, 255, 0.06)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 22px rgba(0, 0, 0, 0.24);
+}
+
 .theme-glass .app-input {
   border-color: var(--glass-border-strong);
   background:
