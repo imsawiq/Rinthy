@@ -275,7 +275,7 @@ export const VersionsTab: React.FC<{
                     setVersionMenuId(prev => prev === version.id ? null : version.id);
                   }}
                   data-active={versionMenuId === version.id ? 'true' : undefined}
-                  className="app-action-button p-2"
+                  className="app-action-button app-menu-button p-2"
                   aria-label="Version actions"
                 >
                   <MoreVertical size={20} strokeWidth={3} />

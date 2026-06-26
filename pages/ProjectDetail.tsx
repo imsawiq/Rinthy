@@ -250,6 +250,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
   );
   const activeTabRef = useRef<ProjectTab>(activeTab);
   const visibleTabsRef = useRef<ProjectTab[]>(visibleTabs);
+  const tabContentRef = useRef<HTMLDivElement | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const depInputRef = useRef<HTMLInputElement | null>(null);
@@ -278,9 +279,17 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
   };
 
   const switchProjectTab = (tab: ProjectTab, target?: EventTarget | null) => {
+    const shouldResetScroll = activeTabRef.current !== tab;
     activeTabRef.current = tab;
     setActiveTab(tab);
     clearPressedControl(target);
+
+    if (shouldResetScroll) {
+      window.requestAnimationFrame(() => {
+        tabContentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      });
+    }
   };
 
   useEffect(() => {
@@ -886,7 +895,7 @@ const ProjectDetail: React.FC<{ token: string; currentUserId?: string | null }> 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div ref={tabContentRef} className="flex-1 overflow-y-auto">
         <div className="px-4 py-6">
           {activeTab === 'overview' && <OverviewTab project={project} deps={deps} projectSummary={projectSummary} t={t} />}
           {activeTab === 'versions' && (

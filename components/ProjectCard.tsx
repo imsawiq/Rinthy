@@ -151,7 +151,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, isFavorite 
             setShowMenu(v => !v);
           }}
           data-active={showMenu ? 'true' : undefined}
-          className="app-action-button p-2.5"
+          className="app-action-button app-menu-button p-2.5"
           aria-label="Project actions"
         >
           <MoreVertical size={20} strokeWidth={2.75} />
