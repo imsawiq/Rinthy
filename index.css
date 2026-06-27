@@ -327,10 +327,12 @@ body {
 
 .theme-glass .app-language-list .app-language-option[data-active='true'] {
   background: transparent !important;
-  border-radius: 0.76rem !important;
+  border-radius: 0.9rem !important;
+  border-color: color-mix(in srgb, var(--accent-color) 40%, rgba(255, 255, 255, 0.14)) !important;
   box-shadow:
-    inset 0 0 0 1px var(--glass-accent-ring),
-    0 8px 22px rgba(0, 0, 0, 0.2);
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-color) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 8px 22px color-mix(in srgb, var(--accent-color) 10%, transparent);
 }
 
 .theme-glass .app-language-list .app-language-option::before {
@@ -342,8 +344,9 @@ body {
   border-radius: inherit;
   opacity: 0;
   background:
+    radial-gradient(circle at 18% 8%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 46%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.008)),
-    rgba(3, 3, 3, 0.74);
+    color-mix(in srgb, var(--accent-color) 8%, rgba(3, 3, 3, 0.76));
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.07) inset;
   transition:
@@ -363,9 +366,11 @@ body {
 }
 
 .theme-glass .app-sort-menu {
-  min-width: min(18rem, calc(100vw - 2rem));
-  border-radius: 1.25rem !important;
-  padding: 0.75rem !important;
+  width: max-content;
+  min-width: min(13.25rem, calc(100vw - 2rem));
+  max-width: min(16rem, calc(100vw - 2rem));
+  border-radius: 1.05rem !important;
+  padding: 0.62rem !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   background:
     radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.055), transparent 34%),
@@ -374,19 +379,20 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 0 0 1px rgba(255, 255, 255, 0.035),
-    0 24px 58px rgba(0, 0, 0, 0.68) !important;
+    0 18px 42px rgba(0, 0, 0, 0.62) !important;
   backdrop-filter: blur(34px) saturate(1.18) contrast(1.08);
   -webkit-backdrop-filter: blur(34px) saturate(1.18) contrast(1.08);
 }
 
 .theme-glass .app-sort-trigger {
-  min-height: 2.6rem;
+  min-height: 2.35rem;
   min-width: 0;
+  max-width: min(15rem, calc(100vw - 2rem));
   justify-content: center;
-  gap: 0.62rem;
-  border-radius: 0.9rem !important;
-  padding: 0.62rem 0.9rem !important;
-  border-color: rgba(255, 255, 255, 0.32) !important;
+  gap: 0.55rem;
+  border-radius: 0.82rem !important;
+  padding: 0.55rem 0.78rem !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
   background:
     radial-gradient(circle at 22% 12%, rgba(255, 255, 255, 0.065), transparent 42%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.006)),
@@ -394,21 +400,25 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.11),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 0 3px color-mix(in srgb, var(--accent-color) 7%, transparent),
-    0 10px 24px rgba(0, 0, 0, 0.42);
+    0 0 0 2px color-mix(in srgb, var(--accent-color) 6%, transparent),
+    0 8px 20px rgba(0, 0, 0, 0.38);
 }
 
 .theme-glass .app-sort-trigger-label {
-  font-size: 0.86rem;
-  font-weight: 850;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 800;
   letter-spacing: 0;
   color: var(--text);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
 }
 
 .theme-glass .app-sort-trigger svg {
-  height: 1rem;
-  width: 1rem;
+  height: 0.92rem;
+  width: 0.92rem;
   filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.45));
 }
 
@@ -417,17 +427,17 @@ body {
 }
 
 .theme-glass .app-sort-menu-title {
-  padding: 0 0.35rem 0.6rem !important;
-  font-size: 0.68rem !important;
-  font-weight: 950 !important;
-  letter-spacing: 0.24em !important;
+  padding: 0 0.25rem 0.48rem !important;
+  font-size: 0.6rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.2em !important;
   color: color-mix(in srgb, var(--text) 68%, transparent) !important;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.58);
 }
 
 .theme-glass .app-sort-list {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.34rem;
   overflow: visible;
 }
 
@@ -435,9 +445,9 @@ body {
   isolation: isolate;
   position: relative;
   overflow: hidden;
-  min-height: 3.15rem;
-  border-radius: 0.95rem !important;
-  padding: 0.75rem 0.95rem !important;
+  min-height: 2.7rem;
+  border-radius: 0.82rem !important;
+  padding: 0.62rem 0.78rem !important;
   border: 1px solid rgba(255, 255, 255, 0.105);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.005)),
@@ -449,7 +459,7 @@ body {
 
 .theme-glass .app-sort-list .app-sort-option[data-active='true'] {
   background: transparent !important;
-  border-radius: 0.95rem !important;
+  border-radius: 0.82rem !important;
   color: var(--text) !important;
   border-color: color-mix(in srgb, var(--accent-color) 45%, rgba(255, 255, 255, 0.16));
   box-shadow:
@@ -490,16 +500,20 @@ body {
 }
 
 .theme-glass .app-sort-option-label {
-  font-size: 1rem;
-  font-weight: 850;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  font-weight: 800;
   letter-spacing: 0;
   color: var(--text);
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.58);
 }
 
 .theme-glass .app-sort-option svg {
-  height: 1.1rem;
-  width: 1.1rem;
+  height: 0.98rem;
+  width: 0.98rem;
   color: var(--text);
   filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.48));
 }
