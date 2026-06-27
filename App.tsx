@@ -1085,7 +1085,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                   setShowSortMenu((prev) => !prev);
                 }}
                 data-active={showSortMenu ? 'true' : undefined}
-                 className={`app-command app-glass-button app-sort-trigger inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
+                 className={`app-sort-trigger inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
                   theme === 'light'
                     ? 'bg-white/80 border-black/10 text-black/70 hover:bg-white'
                     : ''
