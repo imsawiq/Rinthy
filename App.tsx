@@ -1081,14 +1081,14 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
               <button
                 type="button"
                 onClick={() => setShowSortMenu((prev) => !prev)}
-                 className={`app-command app-glass-button inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
+                 className={`app-command app-glass-button app-sort-trigger inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-colors ${
                   theme === 'light'
                     ? 'bg-white/80 border-black/10 text-black/70 hover:bg-white'
                     : ''
                 }`}
               >
                 <Layers size={13} className="text-modrinth-green" />
-                <span>{getSortModeLabel(sortMode)}</span>
+                <span className="app-sort-trigger-label">{getSortModeLabel(sortMode)}</span>
                 <ChevronDown size={14} className={`transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
               </button>
               {showSortMenu && (
@@ -1099,7 +1099,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                       : 'bg-modrinth-card border-modrinth-border'
                 } app-floating-menu`}
                 >
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-modrinth-muted">
+                  <div className="app-sort-menu-title px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-modrinth-muted">
                     {t('sort_by')}
                   </div>
                   <div className="app-glass-list app-sort-list mt-1">
@@ -1119,7 +1119,7 @@ const Dashboard: React.FC<{ user: ModrinthUser; token: string }> = ({ user, toke
                                 : 'text-modrinth-text hover:bg-modrinth-cardHover'
                           }`}
                         >
-                          <span className="font-medium">{getSortModeLabel(mode)}</span>
+                          <span className="app-sort-option-label font-medium">{getSortModeLabel(mode)}</span>
                           {active ? <Check size={14} /> : <span className="w-[14px]" />}
                         </button>
                       );
